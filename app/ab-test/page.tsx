@@ -157,7 +157,7 @@ export default function ABTestPage() {
     if (abResult && !loading && !hasSavedRef.current) {
       hasSavedRef.current = true;
       const apiPlatform = platform === '小红书' ? 'xiaohongshu' : 'douyin';
-      const allTypes = [...abResult.resultA.badcases.map((bc: BadcaseItem) => bc.type), ...abResult.resultB.badcases.map((bc: BadcaseItem) => bc.type)];
+      const allTypes = [...abResult.resultA.badcases.map((bc: BadcaseItem) => bc.badcaseLabel || bc.type), ...abResult.resultB.badcases.map((bc: BadcaseItem) => bc.badcaseLabel || bc.type)];
       addHistoryItem({
         id: generateId(), createdAt: new Date().toISOString(), source: 'ab-test', platform: apiPlatform,
         contentGoal, productTopic, targetAudience,

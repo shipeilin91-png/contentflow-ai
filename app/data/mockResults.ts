@@ -19,6 +19,8 @@ export interface BadcaseItem {
   type: string;
   evidence: string;
   fix: string;
+  badcaseTag?: string;
+  badcaseLabel?: string;
 }
 
 export interface PromptV2 {
@@ -67,6 +69,8 @@ const xiaohongshuResult: EvaluationResult = {
     {
       layer: 'platform',
       type: '搜索意图缺失',
+      badcaseTag: 'search_intent_missing',
+      badcaseLabel: '搜索意图缺失',
       evidence:
         '内容未覆盖关键词"xx护肤品怎么样""xx值得买吗"等搜索高意图词',
       fix: '标题和首段植入用户搜索词，如"干皮秋冬面霜实测｜A vs B 30天对比"',
@@ -74,24 +78,32 @@ const xiaohongshuResult: EvaluationResult = {
     {
       layer: 'platform',
       type: '收藏价值不足',
+      badcaseTag: 'save_worthiness_low',
+      badcaseLabel: '收藏价值不足',
       evidence: '全文无清单/对比表格/步骤总结等可收藏结构',
       fix: '增加"3 款面霜横向对比表格"或"干皮选面霜 Check List"',
     },
     {
       layer: 'audience',
       type: '信任信号缺失',
+      badcaseTag: 'trust_detail_weak',
+      badcaseLabel: '真实体验不足',
       evidence: '无使用前后对比、无使用周期记录、无具体使用场景',
       fix: '增加"使用 14 天皮肤水份值变化记录"和早晚使用场景描述',
     },
     {
       layer: 'audience',
       type: '决策感模糊',
+      badcaseTag: 'trust_barrier_unresolved',
+      badcaseLabel: '购买顾虑未回应',
       evidence: '结论为"都不错，看个人喜好"，未给出明确选择建议',
       fix: '按肤质/预算/场景给出明确推荐，如"预算 200 以内选 A，追求功效选 B"',
     },
     {
       layer: 'creator',
       type: '软种草力度不足',
+      badcaseTag: 'hard_sell_tone',
+      badcaseLabel: '硬广感过强',
       evidence: '产品卖点堆砌，缺乏个人体验叙事，读起来像产品说明书',
       fix: '以个人使用日记视角重写，先抛体验结论再展开细节',
     },
@@ -160,30 +172,40 @@ const douyinResult: EvaluationResult = {
     {
       layer: 'platform',
       type: '缺失 3 秒 Hook',
+      badcaseTag: 'hook_weak',
+      badcaseLabel: '前三秒 Hook 弱',
       evidence: '视频前 3 秒为品牌 Logo 展示，无任何信息/情绪钩子',
       fix: '以冲突句开头，如"花 1000 块买的面霜，还不如 50 块的？"',
     },
     {
       layer: 'platform',
       type: '完播动机不足',
+      badcaseTag: 'completion_drive_low',
+      badcaseLabel: '完播动机不足',
       evidence: '全程平铺介绍产品卖点，无节奏变化、无信息差悬念',
       fix: '设置悬念结构：先抛出问题→放大痛点→揭晓方案→效果验证',
     },
     {
       layer: 'audience',
       type: '缺乏反差/冲突',
+      badcaseTag: 'conflict_contrast_weak',
+      badcaseLabel: '冲突/反差不足',
       evidence: '内容为纯正面介绍，没有对比冲突，用户无情绪波动',
       fix: '加入"贵价 vs 平价实测""宣传效果 vs 真实效果"反差对比',
     },
     {
       layer: 'audience',
       type: 'IP 记忆点缺失',
+      badcaseTag: 'ip_memory_weak',
+      badcaseLabel: 'IP 记忆点不足',
       evidence: '口播风格无辨识度，看完记不住是谁说的',
       fix: '加入标志性口头禅/动作/视觉符号，强化个人 IP 辨识度',
     },
     {
       layer: 'creator',
       type: '互动引导薄弱',
+      badcaseTag: 'interaction_trigger_weak',
+      badcaseLabel: '互动触发弱',
       evidence: '仅在结尾说"点赞关注"，未设计引发互动的钩子',
       fix: '抛出争议性问题引导评论，如"你们觉得这个价格值吗？评论区告诉我"',
     },

@@ -1,4 +1,5 @@
 import { type EvaluationResult, getMockResult } from '@/app/data/mockResults';
+import { mapTypeToTaxon } from '@/app/data/badcaseTaxonomy';
 
 // ── Request body type ───────────────────────────────────────────────
 interface EvaluateRequest {
@@ -55,8 +56,28 @@ Your job is to evaluate AI-generated content using the TriFlow framework across 
 
 ## Badcase Requirements
 - Identify at least 3, at most 5 badcases
-- Each badcase must have: layer (platform/audience/creator), type, evidence (原文引用), fix (具体可执行的改进方案)
+- Each badcase must include these fields: layer, type, badcaseTag, badcaseLabel, evidence, fix
+- badcaseTag must be selected from the platform-specific taxonomy below
+- badcaseLabel must be the Chinese label corresponding to the selected tag
 - Layer assignment: "platform" = platform mechanic mismatch, "audience" = user psychology mismatch, "creator" = brand/creator objective mismatch
+
+### XiaoHongShu Badcase Taxonomy (use only for xiaohongshu platform)
+- search_intent_missing (搜索意图缺失): Content doesn't cover keywords/questions users actively search for
+- trust_detail_weak (真实体验不足): Missing specific usage scenarios, limitations, or detailed evidence
+- save_worthiness_low (收藏价值不足): Lacking checklist, steps, comparison, or save-worthy structure
+- hard_sell_tone (硬广感过强): Overly promotional, lacking natural种草 tone and user perspective
+- trust_barrier_unresolved (购买顾虑未回应): Not addressing user concerns about price, efficacy, suitability
+- keyword_coverage_weak (关键词覆盖弱): Title/body missing platform search keywords and decision terms
+- community_tone_mismatch (社区语气不匹配): Language doesn't sound like genuine experience sharing
+
+### Douyin Badcase Taxonomy (use only for douyin platform)
+- hook_weak (前三秒 Hook 弱): Opening lacks conflict, contrast, pain point, or result hook
+- completion_drive_low (完播动机不足): Missing suspense, progression, or rhythm design to drive completion
+- conflict_contrast_weak (冲突/反差不足): Too flat/narrative, lacking tension needed for short-video feed
+- visualizability_low (镜头感不足): Missing visual/action/storyboard elements, hard to translate to video
+- interaction_trigger_weak (互动触发弱): Missing comment/follow/discussion/remix triggers
+- ip_memory_weak (IP 记忆点不足): Inconsistent tone, persona, viewpoint or expression style
+- rhythm_dragging (节奏拖沓): Information pacing too slow, key points not prominent
 
 ## Prompt v2 Requirements
 - The optimized prompt must address EVERY identified badcase
@@ -65,6 +86,23 @@ Your job is to evaluate AI-generated content using the TriFlow framework across 
 
 // ── Build User Prompt ────────────────────────────────────────────────
 function buildUserPrompt(req: EvaluateRequest): string {
+  const taxonomyList =
+    req.platform === 'douyin'
+      ? `- hook_weak (前三秒 Hook 弱)
+- completion_drive_low (完播动机不足)
+- conflict_contrast_weak (冲突/反差不足)
+- visualizability_low (镜头感不足)
+- interaction_trigger_weak (互动触发弱)
+- ip_memory_weak (IP 记忆点不足)
+- rhythm_dragging (节奏拖沓)`
+      : `- search_intent_missing (搜索意图缺失)
+- trust_detail_weak (真实体验不足)
+- save_worthiness_low (收藏价值不足)
+- hard_sell_tone (硬广感过强)
+- trust_barrier_unresolved (购买顾虑未回应)
+- keyword_coverage_weak (关键词覆盖弱)
+- community_tone_mismatch (社区语气不匹配)`;
+
   const platformRubric =
     req.platform === 'douyin'
       ? `DOUYIN RUBRIC:
@@ -108,6 +146,9 @@ ${req.aiContent}`;
   prompt += `\n\n## Evaluation Instructions
 ${platformRubric}
 
+## Available Badcase Taxonomy Tags (use ONLY these)
+${taxonomyList}
+
 ## Output Format
 Return a SINGLE JSON object with exactly this structure:
 
@@ -128,7 +169,9 @@ Return a SINGLE JSON object with exactly this structure:
   "badcases": [
     {
       "layer": "platform" | "audience" | "creator",
-      "type": "string - specific issue type",
+      "type": "string - specific issue type name",
+      "badcaseTag": "string - MUST be one of the taxonomy tags listed above",
+      "badcaseLabel": "string - the Chinese label for the tag",
       "evidence": "string - quote from the original content",
       "fix": "string - concrete, actionable improvement"
     }
@@ -142,6 +185,7 @@ Return a SINGLE JSON object with exactly this structure:
 
 CRITICAL:
 - badcases array: minimum 3 items, maximum 5 items
+- Each badcase MUST include badcaseTag and badcaseLabel from the taxonomy above
 - All scores: integers from 0 to 100
 - promptV2.optimizedPrompt: must be a complete, usable prompt, NOT a summary
 - promptV2.changeReasons: each reason must reference specific badcases being fixed
@@ -188,10 +232,27 @@ function isValidEvaluationResult(obj: unknown): obj is EvaluationResult {
   return true;
 }
 
+// ── Fill missing taxonomy tags with fallback keyword mapping ────────
+function applyTaxonomyFallback(
+  result: EvaluationResult,
+  platform: string
+): void {
+  for (const bc of result.badcases) {
+    if (bc.badcaseTag && bc.badcaseLabel) continue;
+    const taxon = mapTypeToTaxon(platform, bc.type);
+    if (taxon) {
+      bc.badcaseTag = taxon.tag;
+      bc.badcaseLabel = taxon.label;
+    }
+    // If no match, leave undefined — frontend handles missing fields gracefully
+  }
+}
+
 // ── Call DeepSeek API ───────────────────────────────────────────────
 async function callDeepSeek(
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  platform: string
 ): Promise<EvaluationResult> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey || apiKey === 'your_deepseek_api_key_here') {
@@ -276,6 +337,9 @@ async function callDeepSeek(
     Math.min(100, Math.round(result.triFlowScores.overallEffectiveness))
   );
 
+  // Fill missing badcaseTag/badcaseLabel with keyword-based fallback
+  applyTaxonomyFallback(result, platform);
+
   return result;
 }
 
@@ -305,7 +369,7 @@ export async function POST(request: Request) {
   try {
     const systemPrompt = SYSTEM_PROMPT;
     const userPrompt = buildUserPrompt(body);
-    const result = await callDeepSeek(systemPrompt, userPrompt);
+    const result = await callDeepSeek(systemPrompt, userPrompt, platform);
 
     return Response.json({ ...result, _fallback: false });
   } catch (error) {

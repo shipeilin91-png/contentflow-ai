@@ -77,7 +77,7 @@ export default function EvaluatePage() {
         audienceFit: result.triFlowScores.audienceFit,
         creatorGoalFit: result.triFlowScores.creatorGoalFit,
         badcaseCount: result.badcases.length,
-        badcaseTypes: result.badcases.map((bc) => bc.type),
+        badcaseTypes: result.badcases.map((bc) => bc.badcaseLabel || bc.type),
       });
     }
   }, [result, loading, platform, contentGoal, productTopic, targetAudience]);
@@ -412,7 +412,7 @@ export default function EvaluatePage() {
                         >
                           {bc.layer === 'platform' ? '平台层' : bc.layer === 'audience' ? '受众层' : '创作者层'}
                         </span>
-                        <span className="text-xs font-medium text-slate-700">{bc.type}</span>
+                        <span className="text-xs font-medium text-slate-700">{bc.badcaseLabel || bc.type}</span>
                       </div>
                       <p className="text-xs text-slate-500 mb-1.5">
                         <span className="font-medium text-slate-400">原文证据: </span>
