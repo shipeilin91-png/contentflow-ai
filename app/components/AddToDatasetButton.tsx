@@ -19,6 +19,8 @@ interface Props {
   riskLevel?: 'low' | 'medium' | 'high';
   reviewRequired?: boolean;
   riskTypes?: string[];
+  judgeAgreementLevel?: 'high' | 'medium' | 'low';
+  judgeReviewRequired?: boolean;
   label?: string;
 }
 
@@ -37,6 +39,8 @@ export default function AddToDatasetButton({
   riskLevel,
   reviewRequired,
   riskTypes,
+  judgeAgreementLevel,
+  judgeReviewRequired,
   label,
 }: Props) {
   const [saved, setSaved] = useState(false);
@@ -60,6 +64,8 @@ export default function AddToDatasetButton({
       riskLevel,
       reviewRequired,
       riskTypes,
+      judgeAgreementLevel,
+      judgeReviewRequired,
     });
     setSaved(true);
   };

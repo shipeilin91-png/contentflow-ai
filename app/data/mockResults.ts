@@ -42,6 +42,28 @@ export interface RiskAssessment {
   reasons: string[];
 }
 
+export interface MultiJudge {
+  judgeType: 'platform' | 'audience' | 'creator' | 'risk';
+  name: string;
+  score: number;
+  verdict: 'pass' | 'needs_revision' | 'high_risk';
+  keyConcern: string;
+  evidence: string;
+  recommendation: string;
+}
+
+export interface JudgeAgreement {
+  level: 'high' | 'medium' | 'low';
+  scoreSpread: number;
+  summary: string;
+  reviewRequired: boolean;
+}
+
+export interface MultiJudgeResult {
+  judges: MultiJudge[];
+  agreement: JudgeAgreement;
+}
+
 export interface EvaluationResult {
   audiencePersona: AudiencePersona;
   triFlowScores: TriFlowScores;
@@ -49,6 +71,7 @@ export interface EvaluationResult {
   promptV2: PromptV2;
   confidence?: Confidence;
   riskAssessment?: RiskAssessment;
+  multiJudge?: MultiJudgeResult;
 }
 
 // ── XiaoHongShu Mock Result ───────────────────────────────────────
@@ -168,6 +191,52 @@ const xiaohongshuResult: EvaluationResult = {
       '部分种草表达接近品牌话术，缺少第一人称体验证据',
       '没有出现明显合规红线，但真实感不足可能引发用户信任问题',
     ],
+  },
+  multiJudge: {
+    judges: [
+      {
+        judgeType: 'platform' as const,
+        name: '平台适配评审 Platform Judge',
+        score: 50,
+        verdict: 'needs_revision' as const,
+        keyConcern: '搜索意图缺失 + 收藏价值不足',
+        evidence: '全文中未出现用户会主动搜索的关键词，也无对比表格或收藏结构',
+        recommendation: '标题嵌入搜索词，文末增加"划重点"清单或对比表',
+      },
+      {
+        judgeType: 'audience' as const,
+        name: '受众心理评审 Audience Judge',
+        score: 42,
+        verdict: 'needs_revision' as const,
+        keyConcern: '购买顾虑未回应 + 决策价值模糊',
+        evidence: '未说明适合/不适合人群，也未回应用户对价格和效果的潜在顾虑',
+        recommendation: '明确写出 1-2 个不适合场景，按预算/肤质给出选择建议',
+      },
+      {
+        judgeType: 'creator' as const,
+        name: '创作者目标评审 Creator Judge',
+        score: 48,
+        verdict: 'needs_revision' as const,
+        keyConcern: '软种草路径不完整',
+        evidence: '卖点堆砌多，第一人称体验叙事少，读起来像产品说明书而非个人分享',
+        recommendation: '以个人使用日记视角重写，先抛体验结论再展开具体细节',
+      },
+      {
+        judgeType: 'risk' as const,
+        name: '风险边界评审 Risk Judge',
+        score: 65,
+        verdict: 'needs_revision' as const,
+        keyConcern: '部分描述缺少体验证据支撑',
+        evidence: '未出现合规红线，但种草表达缺少第一人称证据，用户可能质疑真实性',
+        recommendation: '补充使用周期和时间线描述，避免过度承诺产品效果',
+      },
+    ],
+    agreement: {
+      level: 'medium' as const,
+      scoreSpread: 23,
+      summary: '四个评审维度分数存在中等分歧（23 分差），主要分歧集中在平台适配与受众心理之间',
+      reviewRequired: false,
+    },
   },
 };
 
@@ -296,6 +365,52 @@ const douyinResult: EvaluationResult = {
       '短视频脚本缺少实际视频素材参考，完播和互动判断存在不确定性',
       '没有出现明显合规红线或虚假宣传表述',
     ],
+  },
+  multiJudge: {
+    judges: [
+      {
+        judgeType: 'platform' as const,
+        name: '平台适配评审 Platform Judge',
+        score: 42,
+        verdict: 'needs_revision' as const,
+        keyConcern: '前三秒 Hook 弱 + 完播动机不足',
+        evidence: '脚本以品牌 Logo 开场，缺少冲突/反差/痛点钩子，全程平铺直叙',
+        recommendation: '以冲突句开头，替换品牌 Logo 开场，设置悬念递进结构',
+      },
+      {
+        judgeType: 'audience' as const,
+        name: '受众心理评审 Audience Judge',
+        score: 38,
+        verdict: 'needs_revision' as const,
+        keyConcern: '情绪触发不够强',
+        evidence: '内容无反差对比，用户观看中无情绪波动，容易被划走',
+        recommendation: '加入"贵价 vs 平价"或"宣传效果 vs 真实效果"对比片段',
+      },
+      {
+        judgeType: 'creator' as const,
+        name: '创作者目标评审 Creator Judge',
+        score: 45,
+        verdict: 'needs_revision' as const,
+        keyConcern: 'IP 记忆点不足 + 互动引导弱',
+        evidence: '口播风格无辨识度，结尾仅"点赞关注"无互动钩子',
+        recommendation: '加入标志性口头禅/动作，设计争议性问题引导评论',
+      },
+      {
+        judgeType: 'risk' as const,
+        name: '风险边界评审 Risk Judge',
+        score: 72,
+        verdict: 'pass' as const,
+        keyConcern: '文本阶段无明显风险',
+        evidence: '未出现合规红线或虚假宣传，但脚本缺少实际视频素材验证',
+        recommendation: '拍摄后复核口播节奏和实际画面表现',
+      },
+    ],
+    agreement: {
+      level: 'medium' as const,
+      scoreSpread: 34,
+      summary: '四个评审维度存在中等分歧（34 分差），风险评审与其他三维度判断差异较大——无合规风险但平台/受众/创作者适配均需改进',
+      reviewRequired: false,
+    },
   },
 };
 

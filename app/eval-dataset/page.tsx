@@ -263,6 +263,20 @@ export default function EvalDatasetPage() {
                         需复核
                       </span>
                     )}
+                    {item.judgeAgreementLevel && (
+                      <span className={`inline-flex rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+                        item.judgeAgreementLevel === 'high' ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : item.judgeAgreementLevel === 'medium' ? 'border-amber-200 bg-amber-50 text-amber-700'
+                            : 'border-red-200 bg-red-50 text-red-600'
+                      }`}>
+                        评审: {item.judgeAgreementLevel === 'high' ? '高一致' : item.judgeAgreementLevel === 'medium' ? '中等' : '低一致'}
+                      </span>
+                    )}
+                    {item.judgeReviewRequired && (
+                      <span className="inline-flex rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-500">
+                        评审需复核
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

@@ -91,6 +91,8 @@ export default function EvaluatePage() {
         confidenceLevel: result.confidence?.level,
         riskLevel: result.riskAssessment?.riskLevel,
         reviewRequired: result.riskAssessment?.reviewRequired,
+        judgeAgreementLevel: result.multiJudge?.agreement?.level,
+        judgeReviewRequired: result.multiJudge?.agreement?.reviewRequired,
       });
     }
   }, [result, loading, platform, contentGoal, productTopic, targetAudience]);
@@ -508,6 +510,8 @@ export default function EvaluatePage() {
                     riskLevel={result.riskAssessment?.riskLevel}
                     reviewRequired={result.riskAssessment?.reviewRequired}
                     riskTypes={result.riskAssessment?.riskTypes}
+                    judgeAgreementLevel={result.multiJudge?.agreement?.level}
+                    judgeReviewRequired={result.multiJudge?.agreement?.reviewRequired}
                   />
                   <SavePromptButton
                     label="保存 Prompt v2 到版本库"
@@ -535,7 +539,88 @@ export default function EvaluatePage() {
                 </div>
               </section>
 
-              {/* E. Confidence */}
+              {/* E. Multi-Judge Evaluation */}
+              {result.multiJudge && (
+                <section className={cardClass}>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-1">
+                    <span className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold ${
+                      result.multiJudge.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700'
+                        : result.multiJudge.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
+                    }`}>M</span>
+                    多评审一致性 Multi-Judge Evaluation
+                  </h3>
+
+                  {/* Agreement Summary */}
+                  <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 mb-4">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        result.multiJudge.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700'
+                          : result.multiJudge.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700'
+                            : 'bg-red-100 text-red-600'
+                      }`}>
+                        {result.multiJudge.agreement.level === 'high' ? '高一致' : result.multiJudge.agreement.level === 'medium' ? '中等一致' : '低一致'}
+                      </span>
+                      <span className="text-[10px] text-slate-400">分差: {result.multiJudge.agreement.scoreSpread}</span>
+                      {result.multiJudge.agreement.reviewRequired && (
+                        <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold bg-red-100 text-red-600">建议人工复核</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-600">{result.multiJudge.agreement.summary}</p>
+                  </div>
+
+                  {/* Judge Cards */}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {result.multiJudge.judges.map((judge) => (
+                      <div key={judge.judgeType} className={`rounded-xl border p-3 ${
+                        judge.judgeType === 'risk' && judge.verdict === 'high_risk'
+                          ? 'border-red-200 bg-red-50/60'
+                          : judge.judgeType === 'platform'
+                            ? 'border-emerald-100 bg-emerald-50/30'
+                            : judge.judgeType === 'audience'
+                              ? 'border-blue-100 bg-blue-50/30'
+                              : judge.judgeType === 'creator'
+                                ? 'border-purple-100 bg-purple-50/30'
+                                : 'border-slate-100 bg-slate-50/30'
+                      }`}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{judge.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-sm font-bold ${
+                              judge.verdict === 'high_risk' ? 'text-red-500'
+                                : judge.score >= 70 ? 'text-emerald-600'
+                                  : judge.score >= 50 ? 'text-amber-600'
+                                    : 'text-red-500'
+                            }`}>{judge.score}</span>
+                            <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                              judge.verdict === 'pass' ? 'bg-emerald-100 text-emerald-700'
+                                : judge.verdict === 'high_risk' ? 'bg-red-100 text-red-600'
+                                  : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {judge.verdict === 'pass' ? '通过' : judge.verdict === 'high_risk' ? '高风险' : '需修改'}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mb-1">
+                          <span className="font-medium text-slate-400">关键担忧: </span>{judge.keyConcern}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mb-1">
+                          <span className="font-medium text-slate-400">证据: </span>{judge.evidence}
+                        </p>
+                        <p className="text-[10px] text-sky-600">
+                          <span className="font-medium text-sky-500">建议: </span>{judge.recommendation}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="mt-3 text-[10px] text-slate-400 leading-relaxed">
+                    多评审机制用于辅助识别评测分歧和复核优先级，不代表真实平台分发结果、法律意见或商业转化预测。
+                  </p>
+                </section>
+              )}
+
+              {/* G. Confidence */}
               {result.confidence && (
                 <section className={cardClass}>
                   <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
@@ -566,7 +651,7 @@ export default function EvaluatePage() {
                 </section>
               )}
 
-              {/* F. Risk Assessment */}
+              {/* H. Risk Assessment */}
               {result.riskAssessment && (
                 <section className={cardClass}>
                   <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">

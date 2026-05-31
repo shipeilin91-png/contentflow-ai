@@ -1,6 +1,6 @@
 import { type EvaluationResult, getMockResult } from '@/app/data/mockResults';
 import { mapTypeToTaxon } from '@/app/data/badcaseTaxonomy';
-import type { Confidence, RiskAssessment } from '@/app/data/mockResults';
+import type { Confidence, RiskAssessment, MultiJudgeResult } from '@/app/data/mockResults';
 
 // ── Request body type ───────────────────────────────────────────────
 interface EvaluateRequest {
@@ -111,6 +111,47 @@ You must flag content that may pose compliance, authenticity, or quality risks:
 - If confidence is low, reviewRequired = true regardless of riskLevel.
 - Provide riskTypes as array of tags from the list above.
 - Provide 1-3 reasons explaining the risk judgment.
+
+## Multi-Judge Evaluation
+You must evaluate the content from four distinct perspectives simultaneously. Each judge provides an independent score, verdict, key concern, evidence, and recommendation.
+
+### Judge 1: Platform Judge (平台适配评审)
+Focus exclusively on platform mechanics:
+- XiaoHongShu: search intent, save/collection value, authentic experience, trust signals, soft种草
+- Douyin: 3s hook, completion motivation, contrast/conflict, visual pacing, interaction triggers
+- Score based on platform-specific criteria, NOT on audience or creator goals
+
+### Judge 2: Audience Judge (受众心理评审)
+Focus exclusively on user psychology:
+- Does the content match the target audience's current intent and decision stage?
+- Does it address trust barriers and psychological needs?
+- Does it translate product features into user benefits?
+- Does it avoid expressions the audience dislikes?
+
+### Judge 3: Creator Judge (创作者目标评审)
+Focus exclusively on creator/brand objectives:
+- Does the content serve the stated content goal (种草/转化/涨粉/搜索沉淀)?
+- Does it align with the brand/creator persona?
+- Does it have a conversion path or IP memory point?
+- Is the structure reusable enough to become an SOP?
+
+### Judge 4: Risk Judge (风险边界评审)
+Focus exclusively on risk boundaries:
+- Are there exaggerated claims or unsupported efficacy statements?
+- Does it impersonate real user experiences without evidence?
+- Does it suggest circumventing platform moderation?
+- Is human review required?
+
+Each judge must return: judgeType, name, score (0-100), verdict ("pass"/"needs_revision"/"high_risk"), keyConcern, evidence, recommendation.
+
+### Agreement Calculation
+- Compute scoreSpread = max(judgeScores) - min(judgeScores)
+- If scoreSpread <= 15, agreement.level = "high"
+- If 15 < scoreSpread <= 30, agreement.level = "medium"
+- If scoreSpread > 30, agreement.level = "low"
+- If Risk Judge verdict = "high_risk", agreement.reviewRequired = true
+- If agreement.level = "low", agreement.reviewRequired = true
+- Provide a 1-sentence agreement.summary explaining the divergence
 
 ## Prompt v2 Requirements
 - The optimized prompt must address EVERY identified badcase
@@ -224,6 +265,25 @@ Return a SINGLE JSON object with exactly this structure:
     "reviewRequired": true/false,
     "riskTypes": ["unsupported_claim", "exaggerated_promotion", ...],
     "reasons": ["risk reason1", "risk reason2"]
+  },
+  "multiJudge": {
+    "judges": [
+      {
+        "judgeType": "platform" | "audience" | "creator" | "risk",
+        "name": "string - judge display name",
+        "score": 0-100 integer,
+        "verdict": "pass" | "needs_revision" | "high_risk",
+        "keyConcern": "string - most critical issue from this judge's perspective",
+        "evidence": "string - quote or reference from the content",
+        "recommendation": "string - specific fix from this judge's perspective"
+      }
+    ],
+    "agreement": {
+      "level": "high" | "medium" | "low",
+      "scoreSpread": number - max judge score minus min judge score,
+      "summary": "string - one sentence explaining agreement level",
+      "reviewRequired": true/false
+    }
   }
 }
 
@@ -325,6 +385,107 @@ function applyConfidenceFallback(
   ) {
     result.riskAssessment.reviewRequired = true;
   }
+}
+
+// ── Fill missing multiJudge with heuristic fallback ─────────────────
+function applyMultiJudgeFallback(result: EvaluationResult): void {
+  if (result.multiJudge) return;
+
+  const pf = result.triFlowScores.platformFit;
+  const af = result.triFlowScores.audienceFit;
+  const cf = result.triFlowScores.creatorGoalFit;
+
+  // Risk score heuristic based on riskAssessment
+  let riskScore = 70;
+  if (result.riskAssessment?.riskLevel === 'high') {
+    riskScore = 35;
+  } else if (result.riskAssessment?.riskLevel === 'medium') {
+    riskScore = 60;
+  }
+
+  const verdict = (s: number): MultiJudgeResult['judges'][0]['verdict'] => {
+    if (s >= 75) return 'pass';
+    if (s >= 50) return 'needs_revision';
+    return 'needs_revision';
+  };
+
+  const riskVerdict =
+    result.riskAssessment?.riskLevel === 'high' ? 'high_risk' : verdict(riskScore);
+
+  const judges: MultiJudgeResult['judges'] = [
+    {
+      judgeType: 'platform',
+      name: '平台适配评审 Platform Judge',
+      score: pf,
+      verdict: verdict(pf),
+      keyConcern: pf >= 70 ? '平台适配整体较好' : '平台适配存在改进空间',
+      evidence: '基于 TriFlow 平台适配维度评分',
+      recommendation: pf >= 70 ? '保持当前平台适配策略' : '根据平台 Rubric 优化内容表达和结构',
+    },
+    {
+      judgeType: 'audience',
+      name: '受众心理评审 Audience Judge',
+      score: af,
+      verdict: verdict(af),
+      keyConcern: af >= 70 ? '受众匹配度较高' : '受众心理需求回应不足',
+      evidence: '基于 TriFlow 受众适配维度评分',
+      recommendation: af >= 70 ? '保持受众洞察和信任构建' : '增强信任信号和购买顾虑回应',
+    },
+    {
+      judgeType: 'creator',
+      name: '创作者目标评审 Creator Judge',
+      score: cf,
+      verdict: verdict(cf),
+      keyConcern: cf >= 70 ? '创作者目标对齐较好' : '创作者目标对齐度不足',
+      evidence: '基于 TriFlow 创作者目标维度评分',
+      recommendation: cf >= 70 ? '保持目标导向的内容策略' : '加强软种草路径和转化逻辑',
+    },
+    {
+      judgeType: 'risk',
+      name: '风险边界评审 Risk Judge',
+      score: riskScore,
+      verdict: riskVerdict,
+      keyConcern:
+        result.riskAssessment?.riskLevel === 'high'
+          ? '存在高风险内容，需要立即复核'
+          : result.riskAssessment?.riskLevel === 'medium'
+            ? '存在中等风险，建议关注'
+            : '当前内容处于低风险区间',
+      evidence: '基于风险分层评估结果',
+      recommendation:
+        result.riskAssessment?.reviewRequired
+          ? '建议人工复核后发布'
+          : '暂无强制复核要求',
+    },
+  ];
+
+  const scores = judges.map((j) => j.score);
+  const scoreSpread = Math.max(...scores) - Math.min(...scores);
+
+  let level: 'high' | 'medium' | 'low';
+  if (scoreSpread <= 15) level = 'high';
+  else if (scoreSpread <= 30) level = 'medium';
+  else level = 'low';
+
+  const reviewRequired =
+    riskVerdict === 'high_risk' ||
+    level === 'low' ||
+    result.riskAssessment?.reviewRequired === true;
+
+  result.multiJudge = {
+    judges,
+    agreement: {
+      level,
+      scoreSpread,
+      summary:
+        level === 'high'
+          ? '四个评审维度高度一致，评分差异在合理范围内'
+          : level === 'medium'
+            ? '四个评审维度存在中等分歧，部分维度判断差异值得关注'
+            : '四个评审维度分歧较大，建议人工复核确认',
+      reviewRequired,
+    },
+  };
 }
 
 // ── Call DeepSeek API ───────────────────────────────────────────────
@@ -452,6 +613,8 @@ export async function POST(request: Request) {
 
     // Fill missing confidence/risk with heuristic fallback
     applyConfidenceFallback(result, body.aiContent || '');
+    // Fill missing multiJudge with heuristic fallback
+    applyMultiJudgeFallback(result);
 
     return Response.json({ ...result, _fallback: false });
   } catch (error) {

@@ -37,6 +37,8 @@ interface BatchSummary {
   highRiskCount: number;
   reviewRequiredCount: number;
   lowConfidenceCount: number;
+  lowAgreementCount: number;
+  judgeReviewRequiredCount: number;
   nextPromptAdvice: string[];
 }
 
@@ -180,6 +182,12 @@ function computeSummary(items: BatchItem[], platform: string): BatchSummary {
   const lowConfidenceCount = results.filter(
     (r) => r.confidence?.level === 'low'
   ).length;
+  const lowAgreementCount = results.filter(
+    (r) => r.multiJudge?.agreement?.level === 'low'
+  ).length;
+  const judgeReviewRequiredCount = results.filter(
+    (r) => r.multiJudge?.agreement?.reviewRequired
+  ).length;
 
   return {
     totalCount,
@@ -194,6 +202,8 @@ function computeSummary(items: BatchItem[], platform: string): BatchSummary {
     highRiskCount,
     reviewRequiredCount,
     lowConfidenceCount,
+    lowAgreementCount,
+    judgeReviewRequiredCount,
     nextPromptAdvice,
   };
 }
@@ -284,6 +294,12 @@ export default function BatchPage() {
         ? 'high' : results.some((r) => r.result?.riskAssessment?.riskLevel === 'medium')
           ? 'medium' : 'low',
       reviewRequired: results.some((r) => r.result?.riskAssessment?.reviewRequired),
+      judgeAgreementLevel: results.filter((r) => r.result?.multiJudge?.agreement?.level === 'low').length > results.length * 0.5
+        ? 'low'
+        : results.filter((r) => r.result?.multiJudge?.agreement?.level === 'high').length > results.length * 0.5
+          ? 'high'
+          : 'medium',
+      judgeReviewRequired: results.some((r) => r.result?.multiJudge?.agreement?.reviewRequired),
     });
 
     setLoading(false);
@@ -463,8 +479,8 @@ export default function BatchPage() {
                     </div>
                   ))}
                 </div>
-                {(summary.highRiskCount > 0 || summary.reviewRequiredCount > 0 || summary.lowConfidenceCount > 0) && (
-                  <div className="grid grid-cols-3 gap-3 mt-3">
+                {(summary.highRiskCount > 0 || summary.reviewRequiredCount > 0 || summary.lowConfidenceCount > 0 || summary.lowAgreementCount > 0 || summary.judgeReviewRequiredCount > 0) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-3">
                     {summary.highRiskCount > 0 && (
                       <div className="rounded-xl border border-red-100 bg-red-50/60 p-3">
                         <span className="block text-[10px] font-medium text-red-400 uppercase tracking-wider">高风险内容</span>
@@ -481,6 +497,18 @@ export default function BatchPage() {
                       <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3">
                         <span className="block text-[10px] font-medium text-rose-400 uppercase tracking-wider">低置信度</span>
                         <span className="mt-1 block text-xl font-bold text-rose-500">{summary.lowConfidenceCount}</span>
+                      </div>
+                    )}
+                    {summary.lowAgreementCount > 0 && (
+                      <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-3">
+                        <span className="block text-[10px] font-medium text-purple-400 uppercase tracking-wider">评审低一致</span>
+                        <span className="mt-1 block text-xl font-bold text-purple-500">{summary.lowAgreementCount}</span>
+                      </div>
+                    )}
+                    {summary.judgeReviewRequiredCount > 0 && (
+                      <div className="rounded-xl border border-red-100 bg-red-50/60 p-3">
+                        <span className="block text-[10px] font-medium text-red-400 uppercase tracking-wider">评审建议复核</span>
+                        <span className="mt-1 block text-xl font-bold text-red-500">{summary.judgeReviewRequiredCount}</span>
                       </div>
                     )}
                   </div>
@@ -581,6 +609,18 @@ export default function BatchPage() {
                             {item.result?.riskAssessment?.reviewRequired && (
                               <span className="inline-flex rounded border border-red-200 bg-red-50 px-1 py-0.5 text-[10px] text-red-500">需复核</span>
                             )}
+                            {item.result?.multiJudge?.agreement?.level && (
+                              <span className={`inline-flex rounded border px-1 py-0.5 text-[10px] font-medium ${
+                                item.result.multiJudge.agreement.level === 'high' ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                                  : item.result.multiJudge.agreement.level === 'medium' ? 'border-amber-200 bg-amber-50 text-amber-600'
+                                    : 'border-red-200 bg-red-50 text-red-500'
+                              }`}>
+                                评审: {item.result.multiJudge.agreement.level === 'high' ? '一致' : item.result.multiJudge.agreement.level === 'medium' ? '中等' : '分歧'}
+                              </span>
+                            )}
+                            {item.result?.multiJudge?.agreement?.reviewRequired && (
+                              <span className="inline-flex rounded border border-red-200 bg-red-50 px-1 py-0.5 text-[10px] text-red-500">评审需复核</span>
+                            )}
                             {item.result && (
                               <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                 {[
@@ -672,6 +712,8 @@ export default function BatchPage() {
                               riskLevel={item.result.riskAssessment?.riskLevel}
                               reviewRequired={item.result.riskAssessment?.reviewRequired}
                               riskTypes={item.result.riskAssessment?.riskTypes}
+                              judgeAgreementLevel={item.result.multiJudge?.agreement?.level}
+                              judgeReviewRequired={item.result.multiJudge?.agreement?.reviewRequired}
                             />
                           </div>
                         </div>

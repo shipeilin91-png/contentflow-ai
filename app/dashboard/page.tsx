@@ -140,6 +140,23 @@ export default function DashboardPage() {
     (i) => i.riskLevel !== undefined || i.confidenceLevel !== undefined
   );
 
+  // ── Multi-Judge stats ──────────────────────────────────────────
+  const judgeHighAgreement = items.filter(
+    (i) => i.judgeAgreementLevel === 'high'
+  ).length;
+  const judgeMediumAgreement = items.filter(
+    (i) => i.judgeAgreementLevel === 'medium'
+  ).length;
+  const judgeLowAgreement = items.filter(
+    (i) => i.judgeAgreementLevel === 'low'
+  ).length;
+  const judgeReviewCount = items.filter(
+    (i) => i.judgeReviewRequired
+  ).length;
+  const hasJudgeData = items.some(
+    (i) => i.judgeAgreementLevel !== undefined
+  );
+
   // ── Prompt Registry stats ──────────────────────────────────────
   const promptVersions = getPromptVersions();
   const promptTotal = promptVersions.length;
@@ -511,7 +528,44 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 8. Risk & Review Summary ─────────────────────────────── */}
+      {/* ── 8. Multi-Judge Summary ────────────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          多评审一致性概览 Multi-Judge Summary
+        </h2>
+        {!hasJudgeData ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无多评审一致性数据。后续评测会自动记录 Judge 分歧和复核建议。
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">高一致</span>
+              <span className="mt-1.5 block text-2xl font-bold text-emerald-600">{judgeHighAgreement}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">中等一致</span>
+              <span className="mt-1.5 block text-2xl font-bold text-amber-600">{judgeMediumAgreement}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">低一致</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${judgeLowAgreement > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                {judgeLowAgreement}
+              </span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">建议人工复核</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${judgeReviewCount > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                {judgeReviewCount}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 9. Risk & Review Summary ─────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           风险与复核概览 Risk &amp; Review Summary
@@ -546,7 +600,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 9. Prompt Registry Summary ─────────────────────────── */}
+      {/* ── 10. Prompt Registry Summary ────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           Prompt 版本概览 Prompt Registry
@@ -591,7 +645,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 10. SOP Summary ───────────────────────────────────── */}
+      {/* ── 11. SOP Summary ───────────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           SOP 沉淀概览 SOP Summary
@@ -634,7 +688,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 11. Calibration Summary ───────────────────────────── */}
+      {/* ── 12. Calibration Summary ───────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           人工校准概览 Calibration Summary

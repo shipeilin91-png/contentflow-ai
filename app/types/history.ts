@@ -20,4 +20,6 @@ export interface EvaluationHistoryItem {
   confidenceLevel?: 'high' | 'medium' | 'low';
   riskLevel?: 'low' | 'medium' | 'high';
   reviewRequired?: boolean;
+  judgeAgreementLevel?: 'high' | 'medium' | 'low';
+  judgeReviewRequired?: boolean;
 }

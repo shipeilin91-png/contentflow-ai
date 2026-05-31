@@ -180,6 +180,8 @@ export default function ABTestPage() {
         confidenceLevel: abResult.resultB.confidence?.level,
         riskLevel: abResult.resultB.riskAssessment?.riskLevel,
         reviewRequired: abResult.resultB.riskAssessment?.reviewRequired,
+        judgeAgreementLevel: abResult.resultB.multiJudge?.agreement?.level,
+        judgeReviewRequired: abResult.resultB.multiJudge?.agreement?.reviewRequired,
       });
     }
   }, [abResult, loading, platform, contentGoal, productTopic, targetAudience]);
@@ -413,8 +415,8 @@ export default function ABTestPage() {
                     }}
                   />
                 </div>
-                {/* Winner confidence / risk */}
-                {(abResult.resultB.confidence || abResult.resultB.riskAssessment) && (
+                {/* Winner confidence / risk / agreement */}
+                {(abResult.resultB.confidence || abResult.resultB.riskAssessment || abResult.resultB.multiJudge) && (
                   <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
                     {abResult.resultB.confidence && (
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
@@ -436,6 +438,20 @@ export default function ABTestPage() {
                         </span>
                         {abResult.resultB.riskAssessment.reviewRequired && (
                           <span className="text-[10px] text-red-500 font-medium">建议人工复核</span>
+                        )}
+                      </>
+                    )}
+                    {abResult.resultB.multiJudge && (
+                      <>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          abResult.resultB.multiJudge.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700'
+                            : abResult.resultB.multiJudge.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700'
+                              : 'bg-red-100 text-red-600'
+                        }`}>
+                          评审: {abResult.resultB.multiJudge.agreement.level === 'high' ? '高一致' : abResult.resultB.multiJudge.agreement.level === 'medium' ? '中等一致' : '低一致'}
+                        </span>
+                        {(abResult.resultB.multiJudge.agreement.level === 'low' || abResult.resultB.multiJudge.agreement.reviewRequired) && (
+                          <span className="text-[10px] text-red-500 font-medium">推荐版本存在评审分歧，建议人工复核后再发布</span>
                         )}
                       </>
                     )}

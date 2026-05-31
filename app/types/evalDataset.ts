@@ -39,6 +39,8 @@ export interface EvalDatasetItem {
   riskLevel?: 'low' | 'medium' | 'high';
   reviewRequired?: boolean;
   riskTypes?: string[];
+  judgeAgreementLevel?: 'high' | 'medium' | 'low';
+  judgeReviewRequired?: boolean;
   humanLabel?: HumanLabel;
 }
 
