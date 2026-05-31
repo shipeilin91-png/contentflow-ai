@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
 import SaveSopButton from '../components/SaveSopButton';
+import SavePromptButton from '../components/SavePromptButton';
 
 // ── Constants ───────────────────────────────────────────────────────
 const PLATFORMS = ['小红书', '抖音'] as const;
@@ -396,6 +397,23 @@ export default function ComparePage() {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <SavePromptButton
+                    label="保存为 Prompt 策略"
+                    item={{
+                      source: 'compare',
+                      name: `${platform}｜PGC 对比提炼 Prompt 策略`,
+                      platform: platform === '小红书' ? 'xiaohongshu' : 'douyin',
+                      contentGoal,
+                      productTopic: productTopic || undefined,
+                      targetAudience,
+                      versionLabel: 'strategy',
+                      promptText: result.promptOptimizationAdvice.join('\n\n'),
+                      linkedBadcases: result.aigcWeaknesses,
+                      expectedImprovements: result.transferableRules,
+                    }}
+                  />
+                </div>
               </section>
 
               {/* ── 7. SOP 沉淀潜力 ───────────────────────────────── */}

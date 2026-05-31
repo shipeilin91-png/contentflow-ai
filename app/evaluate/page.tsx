@@ -6,6 +6,7 @@ import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
 import SaveSopButton from '../components/SaveSopButton';
 import AddToDatasetButton from '../components/AddToDatasetButton';
+import SavePromptButton from '../components/SavePromptButton';
 import {
   XHS_DEFAULT_STRUCTURE,
   DY_DEFAULT_STRUCTURE,
@@ -507,6 +508,29 @@ export default function EvaluatePage() {
                     riskLevel={result.riskAssessment?.riskLevel}
                     reviewRequired={result.riskAssessment?.reviewRequired}
                     riskTypes={result.riskAssessment?.riskTypes}
+                  />
+                  <SavePromptButton
+                    label="保存 Prompt v2 到版本库"
+                    item={{
+                      source: 'evaluate',
+                      name: `${platform}｜${contentGoal}｜${targetAudience || '通用受众'} Prompt v2`,
+                      platform: platform === '小红书' ? 'xiaohongshu' : 'douyin',
+                      contentGoal,
+                      productTopic: productTopic || undefined,
+                      targetAudience,
+                      versionLabel: 'v2',
+                      promptText: result.promptV2.optimizedPrompt,
+                      parentPromptText: originalPrompt || undefined,
+                      changeReasons: result.promptV2.changeReasons,
+                      linkedBadcases: result.badcases.map((bc) => bc.badcaseLabel || bc.type),
+                      expectedImprovements: result.promptV2.expectedImprovements,
+                      scoreSnapshot: {
+                        platformFit: result.triFlowScores.platformFit,
+                        audienceFit: result.triFlowScores.audienceFit,
+                        creatorGoalFit: result.triFlowScores.creatorGoalFit,
+                        overallEffectiveness: result.triFlowScores.overallEffectiveness,
+                      },
+                    }}
                   />
                 </div>
               </section>

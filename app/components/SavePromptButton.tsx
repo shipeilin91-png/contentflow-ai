@@ -1,0 +1,47 @@
+'use client';
+
+import { useState } from 'react';
+import type { PromptVersionItem } from '@/app/types/promptRegistry';
+import { savePromptVersion, generatePromptVersionId } from '@/app/utils/promptRegistryStorage';
+
+interface Props {
+  item: Omit<PromptVersionItem, 'id' | 'createdAt'>;
+  label?: string;
+}
+
+export default function SavePromptButton({ item, label }: Props) {
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    savePromptVersion({
+      ...item,
+      id: generatePromptVersionId(),
+      createdAt: new Date().toISOString(),
+    });
+    setSaved(true);
+  };
+
+  if (saved) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+        已保存到 Prompt 版本库
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleSave}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 transition-colors hover:bg-sky-100 hover:border-sky-300"
+    >
+      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+      {label || '保存到 Prompt 版本库'}
+    </button>
+  );
+}

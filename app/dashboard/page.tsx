@@ -12,6 +12,7 @@ import {
 import type { CalibrationFeedback } from '../types/calibration';
 import { CALIBRATION_LABEL_MAP } from '../types/calibration';
 import { getUserSopTemplates } from '../utils/sopStorage';
+import { getPromptVersions } from '../utils/promptRegistryStorage';
 import {
   getEvalDatasetItems,
 } from '../utils/evalDatasetStorage';
@@ -138,6 +139,26 @@ export default function DashboardPage() {
   const hasRiskData = items.some(
     (i) => i.riskLevel !== undefined || i.confidenceLevel !== undefined
   );
+
+  // ── Prompt Registry stats ──────────────────────────────────────
+  const promptVersions = getPromptVersions();
+  const promptTotal = promptVersions.length;
+  const promptWinners = promptVersions.filter(
+    (p) => p.abTestResult?.winner === true
+  ).length;
+  const promptAvgDelta =
+    promptVersions.filter((p) => p.abTestResult?.improvementDelta !== undefined).length > 0
+      ? Math.round(
+          promptVersions.reduce(
+            (sum, p) => sum + (p.abTestResult?.improvementDelta || 0),
+            0
+          ) /
+            promptVersions.filter(
+              (p) => p.abTestResult?.improvementDelta !== undefined
+            ).length
+        )
+      : 0;
+  const promptRecent = promptVersions.slice(0, 3);
 
   // ── Helpers ────────────────────────────────────────────────────
   function scoreColor(score: number) {
@@ -525,7 +546,52 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 9. SOP Summary ────────────────────────────────────── */}
+      {/* ── 9. Prompt Registry Summary ─────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          Prompt 版本概览 Prompt Registry
+        </h2>
+        {promptTotal === 0 ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无 Prompt 版本记录。在内容评测或 A/B 测试结果中保存 Prompt 到版本库。
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">Prompt 版本总数</span>
+              <span className="mt-1.5 block text-2xl font-bold text-slate-900">{promptTotal}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">A/B 优胜数</span>
+              <span className="mt-1.5 block text-2xl font-bold text-emerald-600">{promptWinners}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">平均提升</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${promptAvgDelta > 0 ? 'text-emerald-600' : promptAvgDelta < 0 ? 'text-red-500' : 'text-slate-500'}`}>
+                {promptAvgDelta > 0 ? '+' : ''}{promptAvgDelta}
+              </span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">最近版本</span>
+              <div className="mt-1.5 space-y-0.5">
+                {promptRecent.length === 0 ? (
+                  <span className="text-xs text-slate-400">—</span>
+                ) : (
+                  promptRecent.map((p) => (
+                    <p key={p.id} className="text-[10px] font-medium text-slate-700 truncate">
+                      {p.name}
+                    </p>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 10. SOP Summary ───────────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           SOP 沉淀概览 SOP Summary
@@ -568,7 +634,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 10. Calibration Summary ───────────────────────────── */}
+      {/* ── 11. Calibration Summary ───────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           人工校准概览 Calibration Summary

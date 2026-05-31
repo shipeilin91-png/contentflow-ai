@@ -9,6 +9,7 @@ import {
 import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
 import SaveSopButton from '../components/SaveSopButton';
+import SavePromptButton from '../components/SavePromptButton';
 import {
   XHS_DEFAULT_STRUCTURE,
   DY_DEFAULT_STRUCTURE,
@@ -358,6 +359,57 @@ export default function ABTestPage() {
                         ? abResult.remainingIssues
                         : abResult.resultB.badcases.map((bc) => bc.badcaseLabel || bc.type),
                       rubricFocus: platform === '小红书' ? XHS_DEFAULT_RUBRIC : DY_DEFAULT_RUBRIC,
+                    }}
+                  />
+                </div>
+                {/* Save prompts to registry */}
+                <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                  <SavePromptButton
+                    label="保存 Prompt v1"
+                    item={{
+                      source: 'ab-test',
+                      name: `${platform}｜${contentGoal}｜A/B Prompt v1`,
+                      platform: platform === '小红书' ? 'xiaohongshu' : 'douyin',
+                      contentGoal,
+                      productTopic: productTopic || undefined,
+                      targetAudience,
+                      versionLabel: 'v1',
+                      promptText: promptV1,
+                      scoreSnapshot: {
+                        platformFit: abResult.resultA.triFlowScores.platformFit,
+                        audienceFit: abResult.resultA.triFlowScores.audienceFit,
+                        creatorGoalFit: abResult.resultA.triFlowScores.creatorGoalFit,
+                        overallEffectiveness: abResult.resultA.triFlowScores.overallEffectiveness,
+                      },
+                      abTestResult: {
+                        winner: abResult.winner === 'Prompt v1',
+                      },
+                    }}
+                  />
+                  <SavePromptButton
+                    label={`保存 Prompt v2${abResult.winner === 'Prompt v2' ? '（优胜）' : ''}`}
+                    item={{
+                      source: 'ab-test',
+                      name: `${platform}｜${contentGoal}｜A/B ${abResult.winner === 'Prompt v2' ? '优胜' : 'v2'} Prompt`,
+                      platform: platform === '小红书' ? 'xiaohongshu' : 'douyin',
+                      contentGoal,
+                      productTopic: productTopic || undefined,
+                      targetAudience,
+                      versionLabel: abResult.winner === 'Prompt v2' ? 'winner' : 'v2',
+                      promptText: promptV2,
+                      parentPromptText: promptV1 || undefined,
+                      linkedBadcases: abResult.resultB.badcases.map((bc) => bc.badcaseLabel || bc.type),
+                      scoreSnapshot: {
+                        platformFit: abResult.resultB.triFlowScores.platformFit,
+                        audienceFit: abResult.resultB.triFlowScores.audienceFit,
+                        creatorGoalFit: abResult.resultB.triFlowScores.creatorGoalFit,
+                        overallEffectiveness: abResult.resultB.triFlowScores.overallEffectiveness,
+                      },
+                      abTestResult: {
+                        comparedWith: 'Prompt v1',
+                        winner: abResult.winner === 'Prompt v2',
+                        improvementDelta: abResult.resultB.triFlowScores.overallEffectiveness - abResult.resultA.triFlowScores.overallEffectiveness,
+                      },
                     }}
                   />
                 </div>
