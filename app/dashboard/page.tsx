@@ -17,6 +17,8 @@ import {
   getEvalDatasetItems,
 } from '../utils/evalDatasetStorage';
 import { computeAgreementRate } from '../types/evalDataset';
+import { computeDriftSignal, hasEnoughDriftData } from '../utils/driftMonitor';
+import { DRIFT_STATUS_LABEL } from '../types/drift';
 
 type BadcaseFreq = { type: string; count: number };
 
@@ -176,6 +178,10 @@ export default function DashboardPage() {
         )
       : 0;
   const promptRecent = promptVersions.slice(0, 3);
+
+  // ── Drift Monitor ──────────────────────────────────────────────
+  const driftData = computeDriftSignal();
+  const hasDrift = hasEnoughDriftData();
 
   // ── Helpers ────────────────────────────────────────────────────
   function scoreColor(score: number) {
@@ -688,7 +694,111 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 12. Calibration Summary ───────────────────────────── */}
+      {/* ── 12. Drift Monitor ────────────────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          评测漂移监控 Evaluation Drift Monitor
+        </h2>
+        {!hasDrift || !driftData ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无足够数据判断评测漂移。完成更多评测、人工校准和 Eval Dataset 标注后，系统会自动生成漂移信号。
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className={statCardClass}>
+                <span className="block text-xs font-medium text-slate-400">漂移状态</span>
+                <span className={`mt-1.5 block text-2xl font-bold ${
+                  driftData.overallStatus === 'stable' ? 'text-emerald-600'
+                    : driftData.overallStatus === 'watch' ? 'text-amber-600'
+                      : 'text-red-500'
+                }`}>
+                  {DRIFT_STATUS_LABEL[driftData.overallStatus]}
+                </span>
+              </div>
+              <div className={statCardClass}>
+                <span className="block text-xs font-medium text-slate-400">漂移指数</span>
+                <span className={`mt-1.5 block text-2xl font-bold ${
+                  driftData.driftScore <= 29 ? 'text-emerald-600'
+                    : driftData.driftScore <= 59 ? 'text-amber-600'
+                      : 'text-red-500'
+                }`}>
+                  {driftData.driftScore}/100
+                </span>
+              </div>
+              <div className={statCardClass}>
+                <span className="block text-xs font-medium text-slate-400">漂移信号数</span>
+                <span className={`mt-1.5 block text-2xl font-bold ${
+                  driftData.signals.length === 0 ? 'text-emerald-600'
+                    : driftData.signals.length <= 2 ? 'text-amber-600'
+                      : 'text-red-500'
+                }`}>
+                  {driftData.signals.length}
+                </span>
+              </div>
+              <div className={statCardClass}>
+                <span className="block text-xs font-medium text-slate-400">状态摘要</span>
+                <p className="mt-1.5 text-[11px] text-slate-600 leading-relaxed line-clamp-3">
+                  {driftData.summary}
+                </p>
+              </div>
+            </div>
+
+            {driftData.signals.length > 0 && (
+              <div className="mb-4 space-y-2.5">
+                {driftData.signals.map((signal, i) => (
+                  <div
+                    key={signal.type}
+                    className={`rounded-xl border p-4 ${
+                      signal.severity === 'high' ? 'border-red-200 bg-red-50/60'
+                        : signal.severity === 'medium' ? 'border-amber-200 bg-amber-50/60'
+                          : 'border-slate-200 bg-slate-50/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-400">{(i + 1).toString().padStart(2, '0')}</span>
+                      <span className="text-xs font-semibold text-slate-800">{signal.label}</span>
+                      <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                        signal.severity === 'high' ? 'bg-red-100 text-red-600'
+                          : signal.severity === 'medium' ? 'bg-amber-100 text-amber-700'
+                            : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {signal.severity === 'high' ? '高' : signal.severity === 'medium' ? '中' : '低'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mb-1">{signal.description}</p>
+                    <p className="text-[10px] text-slate-400 mb-1">
+                      <span className="font-medium">证据: </span>{signal.evidence}
+                    </p>
+                    <p className="text-[10px] text-sky-600">
+                      <span className="font-medium text-sky-500">建议: </span>{signal.recommendation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {driftData.recommendedActions.length > 0 && (
+              <div className={cardClass}>
+                <h3 className="text-xs font-semibold text-slate-700 mb-2">
+                  推荐动作 Recommended Actions
+                </h3>
+                <ul className="space-y-1.5">
+                  {driftData.recommendedActions.map((action, i) => (
+                    <li key={i} className="flex items-start gap-2 text-[11px] text-slate-600">
+                      <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-indigo-400" />{action}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── 13. Calibration Summary ───────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           人工校准概览 Calibration Summary
