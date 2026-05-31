@@ -238,6 +238,33 @@ export default function EvalDatasetPage() {
                 {item.aiBadcaseLabels && item.aiBadcaseLabels.length > 0 && (
                   <span>AI 标签: {item.aiBadcaseLabels.join(', ')}</span>
                 )}
+                {(item.riskLevel || item.confidenceLevel) && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    {item.confidenceLevel && (
+                      <span className={`inline-flex rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+                        item.confidenceLevel === 'high' ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : item.confidenceLevel === 'medium' ? 'border-amber-200 bg-amber-50 text-amber-700'
+                            : 'border-red-200 bg-red-50 text-red-600'
+                      }`}>
+                        置信: {item.confidenceLevel === 'high' ? '高' : item.confidenceLevel === 'medium' ? '中' : '低'}
+                      </span>
+                    )}
+                    {item.riskLevel && (
+                      <span className={`inline-flex rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+                        item.riskLevel === 'high' ? 'border-red-200 bg-red-50 text-red-600'
+                          : item.riskLevel === 'medium' ? 'border-amber-200 bg-amber-50 text-amber-700'
+                            : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      }`}>
+                        风险: {item.riskLevel === 'high' ? '高' : item.riskLevel === 'medium' ? '中' : '低'}
+                      </span>
+                    )}
+                    {item.reviewRequired && (
+                      <span className="inline-flex rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-500">
+                        需复核
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Human label section */}

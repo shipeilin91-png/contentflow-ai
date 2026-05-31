@@ -17,4 +17,7 @@ export interface EvaluationHistoryItem {
   badcaseTypes: string[];
   recommendedVersion?: 'Prompt v1' | 'Prompt v2';
   improvementDelta?: number;
+  confidenceLevel?: 'high' | 'medium' | 'low';
+  riskLevel?: 'low' | 'medium' | 'high';
+  reviewRequired?: boolean;
 }

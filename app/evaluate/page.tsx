@@ -87,6 +87,9 @@ export default function EvaluatePage() {
         creatorGoalFit: result.triFlowScores.creatorGoalFit,
         badcaseCount: result.badcases.length,
         badcaseTypes: result.badcases.map((bc) => bc.badcaseLabel || bc.type),
+        confidenceLevel: result.confidence?.level,
+        riskLevel: result.riskAssessment?.riskLevel,
+        reviewRequired: result.riskAssessment?.reviewRequired,
       });
     }
   }, [result, loading, platform, contentGoal, productTopic, targetAudience]);
@@ -499,9 +502,88 @@ export default function EvaluatePage() {
                       overallEffectiveness: result.triFlowScores.overallEffectiveness,
                     }}
                     aiBadcaseLabels={result.badcases.map((bc) => bc.badcaseLabel || bc.type)}
+                    confidenceLevel={result.confidence?.level}
+                    confidenceScore={result.confidence?.score}
+                    riskLevel={result.riskAssessment?.riskLevel}
+                    reviewRequired={result.riskAssessment?.reviewRequired}
+                    riskTypes={result.riskAssessment?.riskTypes}
                   />
                 </div>
               </section>
+
+              {/* E. Confidence */}
+              {result.confidence && (
+                <section className={cardClass}>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
+                    <span className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold ${
+                      result.confidence.level === 'high' ? 'bg-emerald-100 text-emerald-700'
+                        : result.confidence.level === 'medium' ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
+                    }`}>C</span>
+                    评测置信度 Confidence
+                  </h3>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      result.confidence.level === 'high' ? 'bg-emerald-100 text-emerald-700'
+                        : result.confidence.level === 'medium' ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-600'
+                    }`}>
+                      {result.confidence.level === 'high' ? '高置信' : result.confidence.level === 'medium' ? '中置信' : '低置信'}
+                    </span>
+                    <span className="text-sm font-bold text-slate-700">{result.confidence.score}/100</span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {result.confidence.reasons.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                        <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-slate-400" />{r}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {/* F. Risk Assessment */}
+              {result.riskAssessment && (
+                <section className={cardClass}>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
+                    <span className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold ${
+                      result.riskAssessment.riskLevel === 'high' ? 'bg-red-100 text-red-700'
+                        : result.riskAssessment.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                    }`}>R</span>
+                    风险分层 Risk Assessment
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      result.riskAssessment.riskLevel === 'high' ? 'bg-red-100 text-red-600'
+                        : result.riskAssessment.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {result.riskAssessment.riskLevel === 'high' ? '高风险' : result.riskAssessment.riskLevel === 'medium' ? '中风险' : '低风险'}
+                    </span>
+                    {result.riskAssessment.reviewRequired && (
+                      <span className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-600">
+                        建议人工复核
+                      </span>
+                    )}
+                    {result.riskAssessment.riskTypes.map((rt) => (
+                      <span key={rt} className="inline-flex rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-500">
+                        {rt}
+                      </span>
+                    ))}
+                  </div>
+                  <ul className="space-y-1.5 mb-3">
+                    {result.riskAssessment.reasons.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                        <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-slate-400" />{r}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    风险分层仅用于内容优化与人工复核参考，不代表法律意见、平台审核结果或真实转化预测。
+                  </p>
+                </section>
+              )}
 
               {/* Human Calibration */}
               <section className={cardClass}>

@@ -29,11 +29,26 @@ export interface PromptV2 {
   expectedImprovements: string[];
 }
 
+export interface Confidence {
+  score: number; // 0-100
+  level: 'high' | 'medium' | 'low';
+  reasons: string[];
+}
+
+export interface RiskAssessment {
+  riskLevel: 'low' | 'medium' | 'high';
+  reviewRequired: boolean;
+  riskTypes: string[];
+  reasons: string[];
+}
+
 export interface EvaluationResult {
   audiencePersona: AudiencePersona;
   triFlowScores: TriFlowScores;
   badcases: BadcaseItem[];
   promptV2: PromptV2;
+  confidence?: Confidence;
+  riskAssessment?: RiskAssessment;
 }
 
 // ── XiaoHongShu Mock Result ───────────────────────────────────────
@@ -135,6 +150,23 @@ const xiaohongshuResult: EvaluationResult = {
       '收藏率提升：从 2% 预估提升至 6-8%',
       '信任转化提升：评论区咨询量预估提升 50%',
       'Platform Fit 预估从 55 分提升至 80+',
+    ],
+  },
+  confidence: {
+    score: 65,
+    level: 'medium' as const,
+    reasons: [
+      '缺少真实体验细节，部分种草表达缺少证据支撑',
+      '用户输入信息长度中等，部分判断依赖模式识别而非内容证据',
+    ],
+  },
+  riskAssessment: {
+    riskLevel: 'medium' as const,
+    reviewRequired: false,
+    riskTypes: ['unsupported_claim', 'fake_experience'],
+    reasons: [
+      '部分种草表达接近品牌话术，缺少第一人称体验证据',
+      '没有出现明显合规红线，但真实感不足可能引发用户信任问题',
     ],
   },
 };
@@ -246,6 +278,23 @@ const douyinResult: EvaluationResult = {
       '整体完播率预估从 15% 提升至 35%+',
       '互动率（评赞转）预估提升 3-5 倍',
       'Platform Fit 预估从 38 分提升至 75+',
+    ],
+  },
+  confidence: {
+    score: 60,
+    level: 'medium' as const,
+    reasons: [
+      '脚本信息较短，Hook 与完播判断需要结合真实视频表现复核',
+      '口播脚本缺少实际镜头表现，部分节奏判断依赖文本推断',
+    ],
+  },
+  riskAssessment: {
+    riskLevel: 'low' as const,
+    reviewRequired: false,
+    riskTypes: ['low_context_confidence'],
+    reasons: [
+      '短视频脚本缺少实际视频素材参考，完播和互动判断存在不确定性',
+      '没有出现明显合规红线或虚假宣传表述',
     ],
   },
 };

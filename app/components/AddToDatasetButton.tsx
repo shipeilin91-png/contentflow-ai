@@ -14,6 +14,11 @@ interface Props {
   prompt?: string;
   aiScores?: AiScores;
   aiBadcaseLabels?: string[];
+  confidenceLevel?: 'high' | 'medium' | 'low';
+  confidenceScore?: number;
+  riskLevel?: 'low' | 'medium' | 'high';
+  reviewRequired?: boolean;
+  riskTypes?: string[];
   label?: string;
 }
 
@@ -27,6 +32,11 @@ export default function AddToDatasetButton({
   prompt,
   aiScores,
   aiBadcaseLabels,
+  confidenceLevel,
+  confidenceScore,
+  riskLevel,
+  reviewRequired,
+  riskTypes,
   label,
 }: Props) {
   const [saved, setSaved] = useState(false);
@@ -45,6 +55,11 @@ export default function AddToDatasetButton({
       prompt: prompt || undefined,
       aiScores,
       aiBadcaseLabels,
+      confidenceLevel,
+      confidenceScore,
+      riskLevel,
+      reviewRequired,
+      riskTypes,
     });
     setSaved(true);
   };

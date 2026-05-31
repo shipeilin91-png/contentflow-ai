@@ -34,6 +34,11 @@ export interface EvalDatasetItem {
   prompt?: string;
   aiScores?: AiScores;
   aiBadcaseLabels?: string[];
+  confidenceLevel?: 'high' | 'medium' | 'low';
+  confidenceScore?: number;
+  riskLevel?: 'low' | 'medium' | 'high';
+  reviewRequired?: boolean;
+  riskTypes?: string[];
   humanLabel?: HumanLabel;
 }
 

@@ -176,6 +176,9 @@ export default function ABTestPage() {
         badcaseCount: abResult.badcaseB, badcaseTypes: [...new Set(allTypes)],
         recommendedVersion: abResult.winner,
         improvementDelta: abResult.resultB.triFlowScores.overallEffectiveness - abResult.resultA.triFlowScores.overallEffectiveness,
+        confidenceLevel: abResult.resultB.confidence?.level,
+        riskLevel: abResult.resultB.riskAssessment?.riskLevel,
+        reviewRequired: abResult.resultB.riskAssessment?.reviewRequired,
       });
     }
   }, [abResult, loading, platform, contentGoal, productTopic, targetAudience]);
@@ -358,6 +361,34 @@ export default function ABTestPage() {
                     }}
                   />
                 </div>
+                {/* Winner confidence / risk */}
+                {(abResult.resultB.confidence || abResult.resultB.riskAssessment) && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                    {abResult.resultB.confidence && (
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        abResult.resultB.confidence.level === 'high' ? 'bg-emerald-100 text-emerald-700'
+                          : abResult.resultB.confidence.level === 'medium' ? 'bg-amber-100 text-amber-700'
+                            : 'bg-red-100 text-red-600'
+                      }`}>
+                        置信: {abResult.resultB.confidence.level === 'high' ? '高' : abResult.resultB.confidence.level === 'medium' ? '中' : '低'}
+                      </span>
+                    )}
+                    {abResult.resultB.riskAssessment && (
+                      <>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          abResult.resultB.riskAssessment.riskLevel === 'high' ? 'bg-red-100 text-red-600'
+                            : abResult.resultB.riskAssessment.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700'
+                              : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          风险: {abResult.resultB.riskAssessment.riskLevel === 'high' ? '高' : abResult.resultB.riskAssessment.riskLevel === 'medium' ? '中' : '低'}
+                        </span>
+                        {abResult.resultB.riskAssessment.reviewRequired && (
+                          <span className="text-[10px] text-red-500 font-medium">建议人工复核</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </section>
 
               {/* Score Comparison */}

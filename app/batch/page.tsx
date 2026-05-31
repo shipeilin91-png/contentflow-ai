@@ -34,6 +34,9 @@ interface BatchSummary {
   topBadcases: { label: string; count: number }[];
   bestItemIndex: number;
   worstItemIndex: number;
+  highRiskCount: number;
+  reviewRequiredCount: number;
+  lowConfidenceCount: number;
   nextPromptAdvice: string[];
 }
 
@@ -168,6 +171,16 @@ function computeSummary(items: BatchItem[], platform: string): BatchSummary {
     nextPromptAdvice.push(`当前高频问题集中在：${labelStr || '暂无显著模式'}。建议针对上述标签逐项优化 Prompt 约束。`);
   }
 
+  const highRiskCount = results.filter(
+    (r) => r.riskAssessment?.riskLevel === 'high'
+  ).length;
+  const reviewRequiredCount = results.filter(
+    (r) => r.riskAssessment?.reviewRequired
+  ).length;
+  const lowConfidenceCount = results.filter(
+    (r) => r.confidence?.level === 'low'
+  ).length;
+
   return {
     totalCount,
     successCount,
@@ -178,6 +191,9 @@ function computeSummary(items: BatchItem[], platform: string): BatchSummary {
     topBadcases,
     bestItemIndex: bestIdx,
     worstItemIndex: worstIdx,
+    highRiskCount,
+    reviewRequiredCount,
+    lowConfidenceCount,
     nextPromptAdvice,
   };
 }
@@ -261,6 +277,13 @@ export default function BatchPage() {
       creatorGoalFit: batchSummary.averageCreatorGoalFit,
       badcaseCount: totalBadcaseCount,
       badcaseTypes: allBadcaseLabels,
+      confidenceLevel: results.filter((r) => r.result?.confidence?.level === 'low').length > results.length * 0.5
+        ? 'low' : results.filter((r) => r.result?.confidence?.level === 'high').length > results.length * 0.5
+          ? 'high' : 'medium',
+      riskLevel: results.some((r) => r.result?.riskAssessment?.riskLevel === 'high')
+        ? 'high' : results.some((r) => r.result?.riskAssessment?.riskLevel === 'medium')
+          ? 'medium' : 'low',
+      reviewRequired: results.some((r) => r.result?.riskAssessment?.reviewRequired),
     });
 
     setLoading(false);
@@ -440,6 +463,28 @@ export default function BatchPage() {
                     </div>
                   ))}
                 </div>
+                {(summary.highRiskCount > 0 || summary.reviewRequiredCount > 0 || summary.lowConfidenceCount > 0) && (
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    {summary.highRiskCount > 0 && (
+                      <div className="rounded-xl border border-red-100 bg-red-50/60 p-3">
+                        <span className="block text-[10px] font-medium text-red-400 uppercase tracking-wider">高风险内容</span>
+                        <span className="mt-1 block text-xl font-bold text-red-500">{summary.highRiskCount}</span>
+                      </div>
+                    )}
+                    {summary.reviewRequiredCount > 0 && (
+                      <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+                        <span className="block text-[10px] font-medium text-amber-400 uppercase tracking-wider">需人工复核</span>
+                        <span className="mt-1 block text-xl font-bold text-amber-600">{summary.reviewRequiredCount}</span>
+                      </div>
+                    )}
+                    {summary.lowConfidenceCount > 0 && (
+                      <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3">
+                        <span className="block text-[10px] font-medium text-rose-400 uppercase tracking-wider">低置信度</span>
+                        <span className="mt-1 block text-xl font-bold text-rose-500">{summary.lowConfidenceCount}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </section>
 
               {/* ── 2. Best / Worst ────────────────────────── */}
@@ -527,6 +572,15 @@ export default function BatchPage() {
                             {item.fallback && (
                               <span className="inline-flex rounded border border-amber-200 bg-amber-50 px-1 py-0.5 text-[10px] text-amber-600">备用</span>
                             )}
+                            {item.result?.riskAssessment?.riskLevel === 'high' && (
+                              <span className="inline-flex rounded border border-red-200 bg-red-50 px-1 py-0.5 text-[10px] text-red-600">高风险</span>
+                            )}
+                            {item.result?.riskAssessment?.riskLevel === 'medium' && (
+                              <span className="inline-flex rounded border border-amber-200 bg-amber-50 px-1 py-0.5 text-[10px] text-amber-600">中风险</span>
+                            )}
+                            {item.result?.riskAssessment?.reviewRequired && (
+                              <span className="inline-flex rounded border border-red-200 bg-red-50 px-1 py-0.5 text-[10px] text-red-500">需复核</span>
+                            )}
                             {item.result && (
                               <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                 {[
@@ -613,6 +667,11 @@ export default function BatchPage() {
                                 overallEffectiveness: item.result.triFlowScores.overallEffectiveness,
                               }}
                               aiBadcaseLabels={item.result.badcases.map((bc) => bc.badcaseLabel || bc.type)}
+                              confidenceLevel={item.result.confidence?.level}
+                              confidenceScore={item.result.confidence?.score}
+                              riskLevel={item.result.riskAssessment?.riskLevel}
+                              reviewRequired={item.result.riskAssessment?.reviewRequired}
+                              riskTypes={item.result.riskAssessment?.riskTypes}
                             />
                           </div>
                         </div>

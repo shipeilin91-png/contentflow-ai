@@ -129,6 +129,16 @@ export default function DashboardPage() {
   const datasetAgreement = computeAgreementRate(datasetItems);
   const datasetRecent = datasetItems.slice(0, 3);
 
+  // ── Risk & Review stats ────────────────────────────────────────
+  const highRiskItems = items.filter((i) => i.riskLevel === 'high').length;
+  const reviewRequiredItems = items.filter((i) => i.reviewRequired).length;
+  const lowConfidenceItems = items.filter(
+    (i) => i.confidenceLevel === 'low'
+  ).length;
+  const hasRiskData = items.some(
+    (i) => i.riskLevel !== undefined || i.confidenceLevel !== undefined
+  );
+
   // ── Helpers ────────────────────────────────────────────────────
   function scoreColor(score: number) {
     if (score >= 70) return 'text-emerald-600';
@@ -480,7 +490,42 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 8. SOP Summary ────────────────────────────────────── */}
+      {/* ── 8. Risk & Review Summary ─────────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          风险与复核概览 Risk &amp; Review Summary
+        </h2>
+        {!hasRiskData ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无风险分层数据。后续评测会自动记录置信度与风险分层。
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-3">
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">高风险记录</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${highRiskItems > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                {highRiskItems}
+              </span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">建议人工复核</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${reviewRequiredItems > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                {reviewRequiredItems}
+              </span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">低置信度</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${lowConfidenceItems > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                {lowConfidenceItems}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 9. SOP Summary ────────────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           SOP 沉淀概览 SOP Summary
@@ -523,7 +568,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 9. Calibration Summary ────────────────────────────── */}
+      {/* ── 10. Calibration Summary ───────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           人工校准概览 Calibration Summary

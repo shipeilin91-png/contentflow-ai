@@ -1,5 +1,6 @@
 import { type EvaluationResult, getMockResult } from '@/app/data/mockResults';
 import { mapTypeToTaxon } from '@/app/data/badcaseTaxonomy';
+import type { Confidence, RiskAssessment } from '@/app/data/mockResults';
 
 // ── Request body type ───────────────────────────────────────────────
 interface EvaluateRequest {
@@ -78,6 +79,38 @@ Your job is to evaluate AI-generated content using the TriFlow framework across 
 - interaction_trigger_weak (互动触发弱): Missing comment/follow/discussion/remix triggers
 - ip_memory_weak (IP 记忆点不足): Inconsistent tone, persona, viewpoint or expression style
 - rhythm_dragging (节奏拖沓): Information pacing too slow, key points not prominent
+
+## Confidence Scoring
+You must evaluate your own confidence in the assessment:
+
+- **High (score 80-100)**: Content is detailed, audience is specific, platform mechanics are clear, and evidence for each badcase is substantial. You are confident in the scores and diagnoses.
+- **Medium (score 50-79)**: Content has moderate detail, some judgments rely on pattern recognition rather than explicit evidence. Scores are directionally correct but may need human adjustment.
+- **Low (score 0-49)**: Content is very short (<50 Chinese characters), audience is vague, product information is missing, or the platform context is unclear. Scores are rough estimates and should be reviewed by a human.
+
+Rules:
+- If content is very short (<50 Chinese characters), confidence must be low.
+- If platform, audience, and product information are all provided and specific, confidence can be high if evidence is strong.
+- Score must be 0-100, level must be "high"/"medium"/"low".
+- Provide 1-3 reasons explaining the confidence level.
+
+## Risk Assessment
+You must flag content that may pose compliance, authenticity, or quality risks:
+
+### Risk Types to Check (use these exact tags)
+- unsupported_claim: Content makes efficacy, sales, ranking, expert endorsement, or effect claims not provided in the input
+- exaggerated_promotion: Absolute claims, over-promises, or clearly exaggerated marketing language
+- fake_experience: Impersonating real user testimonials, buyer reviews, or 素人种草 without real material basis
+- platform_evasion: Content suggests circumventing platform moderation, avoiding sensitive words, or隐形营销
+- medical_financial_legal_risk: Content involves medical, financial, or legal deterministic advice or effect promises
+- low_context_confidence: Insufficient input information causing low AI confidence — human review needed
+- plagiarism_imitation_risk: Content is too close to a benchmark/reference, risking imitation or rewriting
+
+### Risk Level Rules
+- If content contains "100%有效", "全网第一", "根治", "医生推荐", "真实用户亲测" without provided evidence, riskLevel is at least medium.
+- If content suggests bypassing moderation, avoiding sensitive words, or faking 素人 identity, riskLevel = high, reviewRequired = true.
+- If confidence is low, reviewRequired = true regardless of riskLevel.
+- Provide riskTypes as array of tags from the list above.
+- Provide 1-3 reasons explaining the risk judgment.
 
 ## Prompt v2 Requirements
 - The optimized prompt must address EVERY identified badcase
@@ -180,6 +213,17 @@ Return a SINGLE JSON object with exactly this structure:
     "optimizedPrompt": "string - the complete rewritten prompt",
     "changeReasons": ["reason1", "reason2", ...],
     "expectedImprovements": ["improvement1", "improvement2", ...]
+  },
+  "confidence": {
+    "score": 0-100 integer,
+    "level": "high" | "medium" | "low",
+    "reasons": ["reason1", "reason2"]
+  },
+  "riskAssessment": {
+    "riskLevel": "low" | "medium" | "high",
+    "reviewRequired": true/false,
+    "riskTypes": ["unsupported_claim", "exaggerated_promotion", ...],
+    "reasons": ["risk reason1", "risk reason2"]
   }
 }
 
@@ -245,6 +289,41 @@ function applyTaxonomyFallback(
       bc.badcaseLabel = taxon.label;
     }
     // If no match, leave undefined — frontend handles missing fields gracefully
+  }
+}
+
+// ── Fill missing confidence/risk with simple heuristic fallback ─────
+function applyConfidenceFallback(
+  result: EvaluationResult,
+  aiContent: string
+): void {
+  if (!result.confidence) {
+    const isShort = aiContent.replace(/\s/g, '').length < 50;
+    result.confidence = {
+      score: isShort ? 45 : 65,
+      level: isShort ? 'low' : 'medium',
+      reasons: isShort
+        ? ['输入内容过短（<50字），AI 判断置信度较低']
+        : ['AI 未返回置信度数据，使用默认中等置信度'],
+    };
+  }
+  if (!result.riskAssessment) {
+    const isShort = aiContent.replace(/\s/g, '').length < 50;
+    result.riskAssessment = {
+      riskLevel: 'low',
+      reviewRequired: isShort,
+      riskTypes: isShort ? ['low_context_confidence'] : [],
+      reasons: isShort
+        ? ['输入内容过短，建议人工复核']
+        : ['AI 未返回风险评估数据，使用默认低风险'],
+    };
+  }
+  // Ensure reviewRequired if confidence is low
+  if (
+    result.confidence.level === 'low' &&
+    !result.riskAssessment.reviewRequired
+  ) {
+    result.riskAssessment.reviewRequired = true;
   }
 }
 
@@ -370,6 +449,9 @@ export async function POST(request: Request) {
     const systemPrompt = SYSTEM_PROMPT;
     const userPrompt = buildUserPrompt(body);
     const result = await callDeepSeek(systemPrompt, userPrompt, platform);
+
+    // Fill missing confidence/risk with heuristic fallback
+    applyConfidenceFallback(result, body.aiContent || '');
 
     return Response.json({ ...result, _fallback: false });
   } catch (error) {
