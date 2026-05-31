@@ -11,6 +11,7 @@ import {
 } from '../utils/calibration';
 import type { CalibrationFeedback } from '../types/calibration';
 import { CALIBRATION_LABEL_MAP } from '../types/calibration';
+import { getUserSopTemplates } from '../utils/sopStorage';
 
 type BadcaseFreq = { type: string; count: number };
 
@@ -90,6 +91,13 @@ export default function DashboardPage() {
   const calStats = getCalibrationStats();
   const recentCal = calItems.slice(0, 5);
 
+  // ── SOP stats ──────────────────────────────────────────────────
+  const userSops = getUserSopTemplates();
+  const sopTotal = userSops.length;
+  const sopXhs = userSops.filter((s) => s.platform === 'xiaohongshu').length;
+  const sopDy = userSops.filter((s) => s.platform === 'douyin').length;
+  const sopRecent = userSops.slice(0, 3);
+
   // ── Helpers ────────────────────────────────────────────────────
   function scoreColor(score: number) {
     if (score >= 70) return 'text-emerald-600';
@@ -123,7 +131,7 @@ export default function DashboardPage() {
   }
 
   // ── Empty State ────────────────────────────────────────────────
-  if (loaded && items.length === 0 && calItems.length === 0) {
+  if (loaded && items.length === 0 && calItems.length === 0 && sopTotal === 0) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
@@ -355,7 +363,50 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 6. Calibration Summary ────────────────────────────── */}
+      {/* ── 6. SOP Summary ────────────────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          SOP 沉淀概览 SOP Summary
+        </h2>
+        {sopTotal === 0 ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无自定义 SOP。完成一次评测后，可以保存 Prompt 或可迁移规则为 SOP。
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">自定义 SOP 总数</span>
+              <span className="mt-1.5 block text-2xl font-bold text-slate-900">{sopTotal}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">小红书 SOP</span>
+              <span className="mt-1.5 block text-2xl font-bold text-rose-500">{sopXhs}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">抖音 SOP</span>
+              <span className="mt-1.5 block text-2xl font-bold text-cyan-500">{sopDy}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">最近保存</span>
+              <div className="mt-1.5 space-y-0.5">
+                {sopRecent.length === 0 ? (
+                  <span className="text-xs text-slate-400">—</span>
+                ) : (
+                  sopRecent.map((s) => (
+                    <p key={s.id} className="text-[11px] font-medium text-slate-700 truncate">
+                      {s.name}
+                    </p>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 7. Calibration Summary ────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           人工校准概览 Calibration Summary

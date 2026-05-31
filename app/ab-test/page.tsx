@@ -8,6 +8,13 @@ import {
 } from '../data/mockResults';
 import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
+import SaveSopButton from '../components/SaveSopButton';
+import {
+  XHS_DEFAULT_STRUCTURE,
+  DY_DEFAULT_STRUCTURE,
+  XHS_DEFAULT_RUBRIC,
+  DY_DEFAULT_RUBRIC,
+} from '../types/sop';
 
 // ── Constants ───────────────────────────────────────────────────────
 const PLATFORMS = ['小红书', '抖音'] as const;
@@ -331,6 +338,25 @@ export default function ABTestPage() {
                       </li>
                     ))}
                   </ul>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <SaveSopButton
+                    label="保存优胜 Prompt 为 SOP"
+                    template={{
+                      source: 'ab-test',
+                      name: `${platform}｜A/B 优胜｜${contentGoal} SOP`,
+                      platform: platform === '小红书' ? 'xiaohongshu' : 'douyin',
+                      contentGoal,
+                      targetAudience,
+                      productTopic: productTopic || undefined,
+                      structure: platform === '小红书' ? XHS_DEFAULT_STRUCTURE : DY_DEFAULT_STRUCTURE,
+                      promptTemplate: abResult.winner === 'Prompt v2' ? promptV2 : promptV1,
+                      commonBadcases: abResult.remainingIssues.length > 0
+                        ? abResult.remainingIssues
+                        : abResult.resultB.badcases.map((bc) => bc.badcaseLabel || bc.type),
+                      rubricFocus: platform === '小红书' ? XHS_DEFAULT_RUBRIC : DY_DEFAULT_RUBRIC,
+                    }}
+                  />
                 </div>
               </section>
 

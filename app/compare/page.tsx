@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
+import SaveSopButton from '../components/SaveSopButton';
 
 // ── Constants ───────────────────────────────────────────────────────
 const PLATFORMS = ['小红书', '抖音'] as const;
@@ -427,6 +428,23 @@ export default function ComparePage() {
                       </li>
                     ))}
                   </ul>
+                </div>
+                <div className="mt-3 pt-3 border-t border-emerald-100">
+                  <SaveSopButton
+                    label="保存可迁移规则为 SOP"
+                    template={{
+                      source: 'compare',
+                      name: result.sopPotential.suggestedSopName || `${platform}｜PGC/AIGC 对比 SOP`,
+                      platform: platform === '小红书' ? 'xiaohongshu' : 'douyin',
+                      contentGoal,
+                      targetAudience,
+                      productTopic: productTopic || undefined,
+                      structure: result.sopPotential.reusableStructure,
+                      promptTemplate: result.promptOptimizationAdvice.join('\n'),
+                      commonBadcases: result.aigcWeaknesses,
+                      rubricFocus: result.platformSpecificInsights.slice(0, 5),
+                    }}
+                  />
                 </div>
               </section>
 

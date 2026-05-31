@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { getMockResult, type EvaluationResult } from '../data/mockResults';
 import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
+import SaveSopButton from '../components/SaveSopButton';
+import {
+  XHS_DEFAULT_STRUCTURE,
+  DY_DEFAULT_STRUCTURE,
+  XHS_DEFAULT_RUBRIC,
+  DY_DEFAULT_RUBRIC,
+} from '../types/sop';
 
 const PLATFORMS = ['小红书', '抖音'] as const;
 const GOALS = ['种草', '转化', '涨粉', '搜索沉淀'] as const;
@@ -460,6 +467,22 @@ export default function EvaluatePage() {
                       ))}
                     </ul>
                   </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <SaveSopButton
+                    template={{
+                      source: 'evaluate',
+                      name: `${platform}｜${contentGoal}｜${targetAudience || '通用受众'} SOP`,
+                      platform: platform === '小红书' ? 'xiaohongshu' : 'douyin',
+                      contentGoal,
+                      targetAudience,
+                      productTopic: productTopic || undefined,
+                      structure: platform === '小红书' ? XHS_DEFAULT_STRUCTURE : DY_DEFAULT_STRUCTURE,
+                      promptTemplate: result.promptV2.optimizedPrompt,
+                      commonBadcases: result.badcases.map((bc) => bc.badcaseLabel || bc.type),
+                      rubricFocus: platform === '小红书' ? XHS_DEFAULT_RUBRIC : DY_DEFAULT_RUBRIC,
+                    }}
+                  />
                 </div>
               </section>
 
