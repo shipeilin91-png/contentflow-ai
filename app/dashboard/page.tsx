@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getHistoryItems, clearHistory } from '../utils/history';
 import type { EvaluationHistoryItem } from '../types/history';
+import {
+  getCalibrationFeedbacks,
+  getCalibrationStats,
+  clearCalibrationFeedbacks,
+} from '../utils/calibration';
+import type { CalibrationFeedback } from '../types/calibration';
+import { CALIBRATION_LABEL_MAP } from '../types/calibration';
 
 type BadcaseFreq = { type: string; count: number };
 
@@ -14,10 +21,12 @@ const sectionLabel = 'text-xs font-medium text-slate-400 uppercase tracking-wide
 
 export default function DashboardPage() {
   const [items, setItems] = useState<EvaluationHistoryItem[]>([]);
+  const [calItems, setCalItems] = useState<CalibrationFeedback[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     setItems(getHistoryItems());
+    setCalItems(getCalibrationFeedbacks());
     setLoaded(true);
   }, []);
 
@@ -28,7 +37,14 @@ export default function DashboardPage() {
     }
   };
 
-  // ── Computed stats ──────────────────────────────────────────────
+  const handleClearCalibration = () => {
+    if (typeof window !== 'undefined' && window.confirm('确定要清空所有人工校准反馈吗？')) {
+      clearCalibrationFeedbacks();
+      setCalItems([]);
+    }
+  };
+
+  // ── Evaluation stats ────────────────────────────────────────────
   const totalEvaluations = items.length;
 
   const avgOverall =
@@ -47,7 +63,6 @@ export default function DashboardPage() {
   const xhsCount = items.filter((i) => i.platform === 'xiaohongshu').length;
   const dyCount = items.filter((i) => i.platform === 'douyin').length;
 
-  // Top 5 badcase types
   const badcaseFreq: BadcaseFreq[] = (() => {
     const map = new Map<string, number>();
     for (const item of items) {
@@ -61,7 +76,6 @@ export default function DashboardPage() {
       .slice(0, 5);
   })();
 
-  // A/B Test summary
   const abItems = items.filter((i) => i.source === 'ab-test');
   const abCount = abItems.length;
   const abV2Wins = abItems.filter((i) => i.recommendedVersion === 'Prompt v2').length;
@@ -71,6 +85,10 @@ export default function DashboardPage() {
       : 0;
 
   const recentItems = items.slice(0, 10);
+
+  // ── Calibration stats ───────────────────────────────────────────
+  const calStats = getCalibrationStats();
+  const recentCal = calItems.slice(0, 5);
 
   // ── Helpers ────────────────────────────────────────────────────
   function scoreColor(score: number) {
@@ -105,7 +123,7 @@ export default function DashboardPage() {
   }
 
   // ── Empty State ────────────────────────────────────────────────
-  if (loaded && items.length === 0) {
+  if (loaded && items.length === 0 && calItems.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
@@ -143,13 +161,22 @@ export default function DashboardPage() {
             共 {totalEvaluations} 条评测记录
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="inline-flex h-8 items-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50"
-        >
-          清空历史
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleClearCalibration}
+            className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50"
+          >
+            清空校准
+          </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="inline-flex h-8 items-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50"
+          >
+            清空历史
+          </button>
+        </div>
       </div>
 
       {/* ── 1. Overview Cards ────────────────────────────────── */}
@@ -326,6 +353,104 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── 6. Calibration Summary ────────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          人工校准概览 Calibration Summary
+        </h2>
+
+        <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={statCardClass}>
+            <span className="block text-xs font-medium text-slate-400">反馈总数</span>
+            <span className="mt-1.5 block text-2xl font-bold text-slate-900">{calStats.total}</span>
+          </div>
+          <div className={statCardClass}>
+            <span className="block text-xs font-medium text-slate-400">判断准确</span>
+            <span className="mt-1.5 block text-2xl font-bold text-emerald-600">{calStats.accurateCount}</span>
+          </div>
+          <div className={statCardClass}>
+            <span className="block text-xs font-medium text-slate-400">Prompt 建议有用率</span>
+            <span className={`mt-1.5 block text-2xl font-bold ${calStats.promptUsefulRate >= 50 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {calStats.promptUsefulRate}%
+            </span>
+          </div>
+          <div className={statCardClass}>
+            <span className="block text-xs font-medium text-slate-400">问题归因不准确</span>
+            <span className="mt-1.5 block text-2xl font-bold text-rose-500">{calStats.badcaseWrong}</span>
+          </div>
+        </div>
+
+        {calStats.total === 0 ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无人工校准数据。完成一次内容评测后，可以在结果区标记 AI 判断是否准确。
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Detailed stats */}
+            <div className={cardClass}>
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">校准细节</h3>
+              <div className="space-y-2.5">
+                {[
+                  { label: '判断准确', value: calStats.accurateCount, color: 'text-emerald-600' },
+                  { label: '评分偏高', value: calStats.scoreTooHigh, color: 'text-amber-600' },
+                  { label: '评分偏低', value: calStats.scoreTooLow, color: 'text-amber-600' },
+                  { label: '问题归因不准确', value: calStats.badcaseWrong, color: 'text-rose-500' },
+                  { label: 'Prompt 建议有用', value: calStats.promptUseful, color: 'text-emerald-600' },
+                  { label: 'Prompt 建议无用', value: calStats.promptNotUseful, color: 'text-slate-500' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-xs text-slate-600">{label}</span>
+                    <span className={`text-xs font-bold ${color}`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent calibration feedback */}
+            <div className={cardClass}>
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">最近校准记录</h3>
+              {recentCal.length === 0 ? (
+                <p className="text-xs text-slate-400">暂无校准记录。</p>
+              ) : (
+                <div className="space-y-2">
+                  {recentCal.map((cal) => (
+                    <div
+                      key={cal.id}
+                      className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                          {CALIBRATION_LABEL_MAP[cal.feedbackType]}
+                        </span>
+                        <span className={`inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${sourceBadgeColor(cal.source)}`}>
+                          {sourceLabel(cal.source)}
+                        </span>
+                        <span className={`inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${platformBadgeColor(cal.platform)}`}>
+                          {platformLabel(cal.platform)}
+                        </span>
+                      </div>
+                      {cal.productTopic && (
+                        <p className="text-xs font-medium text-slate-700 truncate">
+                          {cal.productTopic}
+                        </p>
+                      )}
+                      {cal.note && (
+                        <p className="mt-0.5 text-[10px] text-slate-400 truncate">
+                          {cal.note}
+                        </p>
+                      )}
+                      <p className="mt-1 text-[10px] text-slate-400">{formatDate(cal.createdAt)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

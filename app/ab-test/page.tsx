@@ -7,6 +7,7 @@ import {
   type BadcaseItem,
 } from '../data/mockResults';
 import { addHistoryItem, generateId } from '../utils/history';
+import CalibrationPanel from '../components/CalibrationPanel';
 
 // ── Constants ───────────────────────────────────────────────────────
 const PLATFORMS = ['小红书', '抖音'] as const;
@@ -408,6 +409,28 @@ export default function ABTestPage() {
                     </li>
                   ))}
                 </ul>
+              </section>
+
+              {/* Human Calibration */}
+              <section className={cardClass}>
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-100 text-[10px] font-bold text-amber-700">H</span>
+                  人工校准 Human Calibration
+                </h3>
+                <CalibrationPanel
+                  source="ab-test"
+                  platform={platform === '小红书' ? 'xiaohongshu' : 'douyin'}
+                  productTopic={productTopic || undefined}
+                  targetAudience={targetAudience || undefined}
+                  buttons={[
+                    'accurate',
+                    'score_too_high',
+                    'score_too_low',
+                    'badcase_wrong',
+                    'prompt_useful',
+                    'prompt_not_useful',
+                  ]}
+                />
               </section>
             </div>
           )}
