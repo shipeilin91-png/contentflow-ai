@@ -98,6 +98,24 @@ export default function DashboardPage() {
   const sopDy = userSops.filter((s) => s.platform === 'douyin').length;
   const sopRecent = userSops.slice(0, 3);
 
+  // ── Batch stats ────────────────────────────────────────────────
+  const batchItems = items.filter((i) => i.source === 'batch');
+  const batchCount = batchItems.length;
+  const batchLastAvg =
+    batchItems.length > 0 ? batchItems[0].overallEffectiveness : 0;
+  const batchTopBadcases = (() => {
+    const map = new Map<string, number>();
+    for (const item of batchItems) {
+      for (const t of item.badcaseTypes) {
+        map.set(t, (map.get(t) || 0) + 1);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+  })();
+
   // ── Helpers ────────────────────────────────────────────────────
   function scoreColor(score: number) {
     if (score >= 70) return 'text-emerald-600';
@@ -112,14 +130,16 @@ export default function DashboardPage() {
       ? 'border-rose-200 bg-rose-50 text-rose-600'
       : 'border-cyan-200 bg-cyan-50 text-cyan-600';
   }
-  function sourceLabel(s: 'evaluate' | 'ab-test' | 'compare') {
+  function sourceLabel(s: 'evaluate' | 'ab-test' | 'compare' | 'batch') {
     if (s === 'evaluate') return '内容评测';
     if (s === 'compare') return 'PGC 对比';
+    if (s === 'batch') return '批量评测';
     return 'A/B 测试';
   }
-  function sourceBadgeColor(s: 'evaluate' | 'ab-test' | 'compare') {
+  function sourceBadgeColor(s: 'evaluate' | 'ab-test' | 'compare' | 'batch') {
     if (s === 'evaluate') return 'border-indigo-200 bg-indigo-50 text-indigo-600';
     if (s === 'compare') return 'border-emerald-200 bg-emerald-50 text-emerald-600';
+    if (s === 'batch') return 'border-purple-200 bg-purple-50 text-purple-600';
     return 'border-amber-200 bg-amber-50 text-amber-700';
   }
   function formatDate(iso: string) {
@@ -363,7 +383,46 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 6. SOP Summary ────────────────────────────────────── */}
+      {/* ── 6. Batch Summary ───────────────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          批量评测概览 Batch Summary
+        </h2>
+        {batchCount === 0 ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无批量评测数据。你可以在「批量评测」页面一次性评估多条 AI 内容。
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-3">
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">批量评测次数</span>
+              <span className="mt-1.5 block text-2xl font-bold text-slate-900">{batchCount}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">最近一次平均分</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${scoreColor(batchLastAvg)}`}>{batchLastAvg}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">批量高频问题 Top3</span>
+              <div className="mt-1.5 space-y-0.5">
+                {batchTopBadcases.length === 0 ? (
+                  <span className="text-xs text-slate-400">—</span>
+                ) : (
+                  batchTopBadcases.map((b) => (
+                    <p key={b.type} className="text-[10px] font-medium text-slate-700 truncate">
+                      {b.type} ({b.count}次)
+                    </p>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 7. SOP Summary ────────────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           SOP 沉淀概览 SOP Summary

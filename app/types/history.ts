@@ -4,7 +4,7 @@
 export interface EvaluationHistoryItem {
   id: string;
   createdAt: string; // ISO 8601
-  source: 'evaluate' | 'ab-test' | 'compare';
+  source: 'evaluate' | 'ab-test' | 'compare' | 'batch';
   platform: 'xiaohongshu' | 'douyin';
   contentGoal: string;
   productTopic: string;

@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { href: '/evaluate', label: '内容评测' },
   { href: '/ab-test', label: 'A/B 测试' },
   { href: '/compare', label: 'PGC 对比' },
+  { href: '/batch', label: '批量评测' },
   { href: '/sop', label: 'SOP 模板' },
   { href: '/dashboard', label: '质量看板' },
 ];
