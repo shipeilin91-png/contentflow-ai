@@ -5,6 +5,7 @@ import { getMockResult, type EvaluationResult } from '../data/mockResults';
 import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
 import SaveSopButton from '../components/SaveSopButton';
+import AddToDatasetButton from '../components/AddToDatasetButton';
 import {
   XHS_DEFAULT_STRUCTURE,
   DY_DEFAULT_STRUCTURE,
@@ -468,7 +469,7 @@ export default function EvaluatePage() {
                     </ul>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
                   <SaveSopButton
                     template={{
                       source: 'evaluate',
@@ -482,6 +483,22 @@ export default function EvaluatePage() {
                       commonBadcases: result.badcases.map((bc) => bc.badcaseLabel || bc.type),
                       rubricFocus: platform === '小红书' ? XHS_DEFAULT_RUBRIC : DY_DEFAULT_RUBRIC,
                     }}
+                  />
+                  <AddToDatasetButton
+                    source="evaluate"
+                    platform={platform === '小红书' ? 'xiaohongshu' : 'douyin'}
+                    contentGoal={contentGoal}
+                    productTopic={productTopic || undefined}
+                    targetAudience={targetAudience || undefined}
+                    content={aiContent}
+                    prompt={originalPrompt || undefined}
+                    aiScores={{
+                      platformFit: result.triFlowScores.platformFit,
+                      audienceFit: result.triFlowScores.audienceFit,
+                      creatorGoalFit: result.triFlowScores.creatorGoalFit,
+                      overallEffectiveness: result.triFlowScores.overallEffectiveness,
+                    }}
+                    aiBadcaseLabels={result.badcases.map((bc) => bc.badcaseLabel || bc.type)}
                   />
                 </div>
               </section>

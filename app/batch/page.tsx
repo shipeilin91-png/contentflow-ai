@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { type EvaluationResult, getMockResult } from '../data/mockResults';
 import { addHistoryItem, generateId } from '../utils/history';
+import AddToDatasetButton from '../components/AddToDatasetButton';
 
 const PLATFORMS = ['小红书', '抖音'] as const;
 const GOALS = ['种草', '转化', '涨粉', '搜索沉淀'] as const;
@@ -17,6 +18,7 @@ interface BatchItem {
   id: string;
   index: number;
   contentPreview: string;
+  fullContent: string;
   result: EvaluationResult | null;
   error?: string;
   fallback?: boolean;
@@ -209,6 +211,7 @@ export default function BatchPage() {
       id: `batch-${Date.now()}-${i}`,
       index: i + 1,
       contentPreview: content.slice(0, 120) + (content.length > 120 ? '…' : ''),
+      fullContent: content,
       result: null,
     }));
     setBatchItems(items);
@@ -592,6 +595,25 @@ export default function BatchPage() {
                             <pre className="mt-1 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[10px] leading-relaxed text-slate-700 font-mono max-h-32 overflow-y-auto">
                               {item.result.promptV2.optimizedPrompt}
                             </pre>
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-100">
+                            <AddToDatasetButton
+                              source="batch"
+                              platform={platform === '小红书' ? 'xiaohongshu' : 'douyin'}
+                              contentGoal={contentGoal}
+                              productTopic={productTopic || undefined}
+                              targetAudience={targetAudience || undefined}
+                              content={item.fullContent}
+                              prompt={originalPrompt || undefined}
+                              aiScores={{
+                                platformFit: item.result.triFlowScores.platformFit,
+                                audienceFit: item.result.triFlowScores.audienceFit,
+                                creatorGoalFit: item.result.triFlowScores.creatorGoalFit,
+                                overallEffectiveness: item.result.triFlowScores.overallEffectiveness,
+                              }}
+                              aiBadcaseLabels={item.result.badcases.map((bc) => bc.badcaseLabel || bc.type)}
+                            />
                           </div>
                         </div>
                       )}

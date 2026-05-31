@@ -12,6 +12,10 @@ import {
 import type { CalibrationFeedback } from '../types/calibration';
 import { CALIBRATION_LABEL_MAP } from '../types/calibration';
 import { getUserSopTemplates } from '../utils/sopStorage';
+import {
+  getEvalDatasetItems,
+} from '../utils/evalDatasetStorage';
+import { computeAgreementRate } from '../types/evalDataset';
 
 type BadcaseFreq = { type: string; count: number };
 
@@ -115,6 +119,15 @@ export default function DashboardPage() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);
   })();
+
+  // ── Eval Dataset stats ─────────────────────────────────────────
+  const datasetItems = getEvalDatasetItems();
+  const datasetTotal = datasetItems.length;
+  const datasetAnnotated = datasetItems.filter(
+    (d) => d.humanLabel?.usability
+  ).length;
+  const datasetAgreement = computeAgreementRate(datasetItems);
+  const datasetRecent = datasetItems.slice(0, 3);
 
   // ── Helpers ────────────────────────────────────────────────────
   function scoreColor(score: number) {
@@ -422,7 +435,52 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 7. SOP Summary ────────────────────────────────────── */}
+      {/* ── 7. Eval Dataset Summary ────────────────────────────── */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-800 mb-3">
+          评测集概览 Eval Dataset Summary
+        </h2>
+        {datasetTotal === 0 ? (
+          <div className={cardClass}>
+            <p className="text-xs text-slate-400">
+              暂无评测集样本。你可以在内容评测或批量评测结果中点击「加入评测集」。
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">样本总数</span>
+              <span className="mt-1.5 block text-2xl font-bold text-slate-900">{datasetTotal}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">已标注</span>
+              <span className="mt-1.5 block text-2xl font-bold text-indigo-600">{datasetAnnotated}</span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">AI/人工一致率</span>
+              <span className={`mt-1.5 block text-2xl font-bold ${datasetAgreement.rate >= 70 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {datasetAgreement.total > 0 ? `${datasetAgreement.rate}%` : '—'}
+              </span>
+            </div>
+            <div className={statCardClass}>
+              <span className="block text-xs font-medium text-slate-400">最近样本</span>
+              <div className="mt-1.5 space-y-0.5">
+                {datasetRecent.length === 0 ? (
+                  <span className="text-xs text-slate-400">—</span>
+                ) : (
+                  datasetRecent.map((d) => (
+                    <p key={d.id} className="text-[10px] font-medium text-slate-700 truncate">
+                      {d.productTopic || d.contentGoal || '(未命名)'}
+                    </p>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 8. SOP Summary ────────────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           SOP 沉淀概览 SOP Summary
@@ -465,7 +523,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 7. Calibration Summary ────────────────────────────── */}
+      {/* ── 9. Calibration Summary ────────────────────────────── */}
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">
           人工校准概览 Calibration Summary
