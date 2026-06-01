@@ -90,7 +90,7 @@ const xiaohongshuResult: EvaluationResult = {
       '结论模糊、各打五十大板 → 决策价值低',
     ],
     dislikedExpressions: [
-      '“绝绝子”“YYDS”等无信息量感叹词',
+      '“绝绝子”“永远的神”等无信息量感叹词',
       '品牌方话术：官方卖点罗列',
       '无对比、无场景的孤立推荐',
     ],
@@ -111,7 +111,7 @@ const xiaohongshuResult: EvaluationResult = {
       badcaseLabel: '搜索意图缺失',
       evidence:
         '内容未覆盖关键词"xx护肤品怎么样""xx值得买吗"等搜索高意图词',
-      fix: '标题和首段植入用户搜索词，如"干皮秋冬面霜实测｜A vs B 30天对比"',
+      fix: '标题和首段植入用户搜索词，如"干皮秋冬面霜实测｜两款产品 30 天对比"',
     },
     {
       layer: 'platform',
@@ -119,7 +119,7 @@ const xiaohongshuResult: EvaluationResult = {
       badcaseTag: 'save_worthiness_low',
       badcaseLabel: '收藏价值不足',
       evidence: '全文无清单/对比表格/步骤总结等可收藏结构',
-      fix: '增加"3 款面霜横向对比表格"或"干皮选面霜 Check List"',
+      fix: '增加"3 款面霜横向对比表格"或"干皮选面霜检查清单"',
     },
     {
       layer: 'audience',
@@ -150,7 +150,7 @@ const xiaohongshuResult: EvaluationResult = {
     optimizedPrompt: `你是一个小红书内容创作者，正在为一款[产品名称]撰写一篇"真实使用体验+横向对比"笔记。
 
 【内容要求】
-1. 标题采用搜索友好格式："[产品]真的值得买吗？X 天实测对比 [竞品]"
+1. 标题采用搜索友好格式："[产品]真的值得买吗？连续多天实测对比 [竞品]"
 2. 首段直接给出结论，满足"不想看长文就想知道答案"的用户
 3. 正文包含：
    - 使用时间线和场景（如：每天早上洁面后使用，连续 14 天）
@@ -163,7 +163,7 @@ const xiaohongshuResult: EvaluationResult = {
 7. 避免：品牌方话术、形容词堆砌、无信息量感叹词、过度修图感描述`,
     changeReasons: [
       '增加搜索关键词密度，提升搜索曝光',
-      '加入对比表格和 Checklist 提升收藏价值',
+      '加入对比表格和检查清单，提升收藏价值',
       '以第一人称体验叙事替代品牌卖点罗列',
       '给出明确选择建议，提升决策参考价值',
       '增加使用时间线和数据变化，建立信任',
@@ -172,7 +172,7 @@ const xiaohongshuResult: EvaluationResult = {
       '搜索曝光提升：预估覆盖 5-8 个长尾搜索词',
       '收藏率提升：从 2% 预估提升至 6-8%',
       '信任转化提升：评论区咨询量预估提升 50%',
-      'Platform Fit 预估从 55 分提升至 80+',
+      '平台适配分预估从 55 分提升至 80 分以上',
     ],
   },
   confidence: {
@@ -196,7 +196,7 @@ const xiaohongshuResult: EvaluationResult = {
     judges: [
       {
         judgeType: 'platform' as const,
-        name: '平台适配评审 Platform Judge',
+        name: '平台适配评审',
         score: 50,
         verdict: 'needs_revision' as const,
         keyConcern: '搜索意图缺失 + 收藏价值不足',
@@ -205,7 +205,7 @@ const xiaohongshuResult: EvaluationResult = {
       },
       {
         judgeType: 'audience' as const,
-        name: '受众心理评审 Audience Judge',
+        name: '受众心理评审',
         score: 42,
         verdict: 'needs_revision' as const,
         keyConcern: '购买顾虑未回应 + 决策价值模糊',
@@ -214,7 +214,7 @@ const xiaohongshuResult: EvaluationResult = {
       },
       {
         judgeType: 'creator' as const,
-        name: '创作者目标评审 Creator Judge',
+        name: '创作者目标评审',
         score: 48,
         verdict: 'needs_revision' as const,
         keyConcern: '软种草路径不完整',
@@ -223,7 +223,7 @@ const xiaohongshuResult: EvaluationResult = {
       },
       {
         judgeType: 'risk' as const,
-        name: '风险边界评审 Risk Judge',
+        name: '风险边界评审',
         score: 65,
         verdict: 'needs_revision' as const,
         keyConcern: '部分描述缺少体验证据支撑',
@@ -272,10 +272,10 @@ const douyinResult: EvaluationResult = {
   badcases: [
     {
       layer: 'platform',
-      type: '缺失 3 秒 Hook',
+      type: '缺失前三秒钩子',
       badcaseTag: 'hook_weak',
-      badcaseLabel: '前三秒 Hook 弱',
-      evidence: '视频前 3 秒为品牌 Logo 展示，无任何信息/情绪钩子',
+      badcaseLabel: '前三秒钩子弱',
+      evidence: '视频前 3 秒为品牌标识展示，无任何信息或情绪钩子',
       fix: '以冲突句开头，如"花 1000 块买的面霜，还不如 50 块的？"',
     },
     {
@@ -292,15 +292,15 @@ const douyinResult: EvaluationResult = {
       badcaseTag: 'conflict_contrast_weak',
       badcaseLabel: '冲突/反差不足',
       evidence: '内容为纯正面介绍，没有对比冲突，用户无情绪波动',
-      fix: '加入"贵价 vs 平价实测""宣传效果 vs 真实效果"反差对比',
+      fix: '加入"贵价和平价实测""宣传效果和真实效果"反差对比',
     },
     {
       layer: 'audience',
-      type: 'IP 记忆点缺失',
+      type: '账号记忆点缺失',
       badcaseTag: 'ip_memory_weak',
-      badcaseLabel: 'IP 记忆点不足',
+      badcaseLabel: '账号记忆点不足',
       evidence: '口播风格无辨识度，看完记不住是谁说的',
-      fix: '加入标志性口头禅/动作/视觉符号，强化个人 IP 辨识度',
+      fix: '加入标志性口头禅、动作或视觉符号，强化账号辨识度',
     },
     {
       layer: 'creator',
@@ -315,14 +315,14 @@ const douyinResult: EvaluationResult = {
     optimizedPrompt: `你是一个抖音内容创作者，正在制作一条[产品/主题]相关的短视频口播脚本。
 
 【内容结构】
-1. 【0-3 秒｜Hook】以冲突句/反差句/反常识句开头
-   - 示例："这个东西全网都在推，但我用了 7 天发现一个 bug"
-   - 示例："花 1000 和 50 块买的 X，区别到底有多大？"
+1. 【0-3 秒｜钩子】以冲突句/反差句/反常识句开头
+   - 示例："这个东西全网都在推，但我用了 7 天发现一个问题"
+   - 示例："花 1000 和 50 块买的同类产品，区别到底有多大？"
 2. 【3-15 秒｜痛点放大】描述用户最在意的痛点，建立共鸣
 3. 【15-25 秒｜解决方案】引出产品/方法，给出核心卖点（不超过 3 个）
 4. 【25-35 秒｜效果验证】真实使用对比/实测数据/使用场景
 5. 【35-45 秒｜互动引导】抛出争议性问题或投票，引导评论区讨论
-6. 【45-50 秒｜IP 记忆点】标志性口号/动作结束
+6. 【45-50 秒｜账号记忆点】用标志性口号或动作结束
 
 【风格要求】
 - 节奏：每 3-5 秒一个信息点或情绪转换，避免平铺
@@ -336,24 +336,24 @@ const douyinResult: EvaluationResult = {
 - 信息量过低的内容水词
 - 超过 60 秒（除非是系列深度内容）`,
     changeReasons: [
-      '增加 3 秒冲突 Hook 提升停留率',
+      '增加 3 秒冲突钩子提升停留率',
       '快节奏分段结构提升完播率',
       '加入反差对比增加内容记忆度',
       '设计互动钩子驱动评论/分享',
-      'IP 记忆点强化账号辨识度',
+      '账号记忆点强化账号辨识度',
     ],
     expectedImprovements: [
       '前 3 秒完播率预估从 30% 提升至 60%+',
       '整体完播率预估从 15% 提升至 35%+',
       '互动率（评赞转）预估提升 3-5 倍',
-      'Platform Fit 预估从 38 分提升至 75+',
+      '平台适配分预估从 38 分提升至 75 分以上',
     ],
   },
   confidence: {
     score: 60,
     level: 'medium' as const,
     reasons: [
-      '脚本信息较短，Hook 与完播判断需要结合真实视频表现复核',
+      '脚本信息较短，开头钩子与完播判断需要结合真实视频表现复核',
       '口播脚本缺少实际镜头表现，部分节奏判断依赖文本推断',
     ],
   },
@@ -370,34 +370,34 @@ const douyinResult: EvaluationResult = {
     judges: [
       {
         judgeType: 'platform' as const,
-        name: '平台适配评审 Platform Judge',
+        name: '平台适配评审',
         score: 42,
         verdict: 'needs_revision' as const,
-        keyConcern: '前三秒 Hook 弱 + 完播动机不足',
-        evidence: '脚本以品牌 Logo 开场，缺少冲突/反差/痛点钩子，全程平铺直叙',
-        recommendation: '以冲突句开头，替换品牌 Logo 开场，设置悬念递进结构',
+        keyConcern: '前三秒钩子弱 + 完播动机不足',
+        evidence: '脚本以品牌标识开场，缺少冲突、反差或痛点钩子，全程平铺直叙',
+        recommendation: '以冲突句开头，替换品牌标识开场，设置悬念递进结构',
       },
       {
         judgeType: 'audience' as const,
-        name: '受众心理评审 Audience Judge',
+        name: '受众心理评审',
         score: 38,
         verdict: 'needs_revision' as const,
         keyConcern: '情绪触发不够强',
         evidence: '内容无反差对比，用户观看中无情绪波动，容易被划走',
-        recommendation: '加入"贵价 vs 平价"或"宣传效果 vs 真实效果"对比片段',
+        recommendation: '加入"贵价和平价"或"宣传效果和真实效果"对比片段',
       },
       {
         judgeType: 'creator' as const,
-        name: '创作者目标评审 Creator Judge',
+        name: '创作者目标评审',
         score: 45,
         verdict: 'needs_revision' as const,
-        keyConcern: 'IP 记忆点不足 + 互动引导弱',
+        keyConcern: '账号记忆点不足 + 互动引导弱',
         evidence: '口播风格无辨识度，结尾仅"点赞关注"无互动钩子',
         recommendation: '加入标志性口头禅/动作，设计争议性问题引导评论',
       },
       {
         judgeType: 'risk' as const,
-        name: '风险边界评审 Risk Judge',
+        name: '风险边界评审',
         score: 72,
         verdict: 'pass' as const,
         keyConcern: '文本阶段无明显风险',

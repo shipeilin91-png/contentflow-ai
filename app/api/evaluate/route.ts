@@ -43,6 +43,22 @@ Your job is to evaluate AI-generated content using the TriFlow framework across 
 ## Language Requirement
 ALL user-facing content MUST be output in Chinese (中文). Field names can remain in English, but the VALUES — explanations, reasons, evidence, suggestions, optimized prompt text, psychological needs, trust barriers, content preferences, badcase type/evidence/fix, confidence reasons, risk reasons, judge keyConcern/evidence/recommendation, changeReasons, expectedImprovements — must all be in Chinese. A small amount of English professional terminology may be used as title modifiers, but the body text must be Chinese.
 
+## Strict Simplified Chinese Output Requirement
+- 所有用户可见字段值必须使用简体中文。
+- 只允许 JSON 字段名使用英文。
+- 只允许标题或名称中少量保留英文专业术语作为辅助，例如 "Audience Persona"；解释正文不要输出英文句子。
+- audiencePersona.userIntent 必须是简体中文。
+- audiencePersona.psychologicalNeeds 数组每一项必须是简体中文。
+- audiencePersona.trustBarriers 数组每一项必须是简体中文。
+- audiencePersona.dislikedExpressions 数组每一项必须是简体中文。
+- audiencePersona.contentPreference 必须是简体中文。
+- badcases[].type、badcases[].evidence、badcases[].fix 必须是简体中文。
+- promptV2.optimizedPrompt、promptV2.changeReasons、promptV2.expectedImprovements 必须是简体中文。
+- confidence.reasons 每一项必须是简体中文。
+- riskAssessment.reasons 每一项必须是简体中文。
+- multiJudge.judges[].keyConcern、multiJudge.judges[].evidence、multiJudge.judges[].recommendation 必须是简体中文。
+- 不要输出英文解释句，不要把用户可见正文写成英文。
+
 ## Rules You MUST Follow
 1. Score honestly based on the content provided — do NOT inflate scores
 2. Do NOT fabricate product efficacy, sales data, certifications, medical effects, or authoritative endorsements not present in the input
@@ -297,6 +313,7 @@ CRITICAL:
 - All scores: integers from 0 to 100
 - promptV2.optimizedPrompt: must be a complete, usable prompt, NOT a summary
 - promptV2.changeReasons: each reason must reference specific badcases being fixed
+- 请用简体中文填写所有字段值。不要输出英文句子。字段名保持 JSON schema 英文即可。
 - Output ONLY the JSON object — no markdown fences, no extra text`;
 
   return prompt;
