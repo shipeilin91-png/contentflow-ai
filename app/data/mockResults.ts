@@ -64,6 +64,24 @@ export interface MultiJudgeResult {
   agreement: JudgeAgreement;
 }
 
+export interface LocalizedEvaluation {
+  audiencePersona?: Partial<AudiencePersona>;
+  badcases?: Partial<Pick<BadcaseItem, 'type' | 'badcaseLabel' | 'evidence' | 'fix'>>[];
+  promptV2?: Partial<PromptV2>;
+  confidence?: {
+    reasons?: string[];
+  };
+  riskAssessment?: {
+    reasons?: string[];
+    riskTypeLabels?: string[];
+  };
+  multiJudge?: {
+    judges?: Partial<Pick<MultiJudge, 'keyConcern' | 'evidence' | 'recommendation'>>[];
+    agreementSummary?: string;
+  };
+  summary?: string;
+}
+
 export interface EvaluationResult {
   audiencePersona: AudiencePersona;
   triFlowScores: TriFlowScores;
@@ -72,6 +90,10 @@ export interface EvaluationResult {
   confidence?: Confidence;
   riskAssessment?: RiskAssessment;
   multiJudge?: MultiJudgeResult;
+  localized?: {
+    zh: LocalizedEvaluation;
+    en: LocalizedEvaluation;
+  };
 }
 
 // ── XiaoHongShu Mock Result ───────────────────────────────────────
@@ -236,6 +258,129 @@ const xiaohongshuResult: EvaluationResult = {
       scoreSpread: 23,
       summary: '四个评审维度分数存在中等分歧（23 分差），主要分歧集中在平台适配与受众心理之间',
       reviewRequired: false,
+    },
+  },
+  localized: {
+    zh: {
+      summary: '当前内容有基础信息，但搜索意图、收藏价值和真实体验信号不足，建议先补强证据和决策结构。',
+    },
+    en: {
+      audiencePersona: {
+        userIntent: 'Search discovery -> information comparison -> trust validation -> save for decision-making',
+        psychologicalNeeds: [
+          'Authenticity validation: users need to see real experience rather than polished ad-style claims.',
+          'Information density: users want useful details in a compact format.',
+          'Risk avoidance: users care more about what to avoid and how to choose than broad praise.',
+          'Social proof: saves, comments, and concrete details help users judge credibility.',
+        ],
+        trustBarriers: [
+          'Over-polished visuals reduce perceived authenticity.',
+          'Missing usage scenarios or timelines weakens trust.',
+          'Vague conclusions lower decision value.',
+        ],
+        dislikedExpressions: [
+          'Empty hype words without useful information.',
+          'Brand-style feature lists.',
+          'Isolated recommendations without comparison or context.',
+        ],
+        contentPreference:
+          'Checklist and comparison formats over narrative-only posts; high information density over emotional decoration; real scenarios over polished studio presentation.',
+      },
+      badcases: [
+        {
+          type: 'Missing search intent',
+          badcaseLabel: 'Missing search intent',
+          evidence: 'The content does not cover high-intent search phrases such as product reviews, worth buying, or comparison terms.',
+          fix: 'Add search-friendly terms in the title and opening, such as a multi-day comparison for dry-skin winter cream.',
+        },
+        {
+          type: 'Low save value',
+          badcaseLabel: 'Low save value',
+          evidence: 'The content lacks checklist, comparison table, steps, or summary structures worth saving.',
+          fix: 'Add a comparison table or a short product-selection checklist for the target audience.',
+        },
+        {
+          type: 'Weak trust signals',
+          badcaseLabel: 'Insufficient real experience',
+          evidence: 'There is no before/after comparison, usage timeline, or concrete scenario.',
+          fix: 'Add a 14-day usage timeline, morning/evening scenarios, and observable changes.',
+        },
+        {
+          type: 'Unclear decision guidance',
+          badcaseLabel: 'Purchase concerns not addressed',
+          evidence: 'The conclusion stays vague and does not provide a clear choice recommendation.',
+          fix: 'Give recommendations by skin type, budget, and usage scenario.',
+        },
+        {
+          type: 'Weak soft recommendation path',
+          badcaseLabel: 'Too promotional',
+          evidence: 'The content stacks product selling points and reads like a product manual.',
+          fix: 'Rewrite from a first-person usage diary perspective, starting with the experience conclusion.',
+        },
+      ],
+      promptV2: {
+        optimizedPrompt: `You are a Xiaohongshu content creator writing a post for [product name] using a real experience plus comparison format.
+
+Requirements:
+1. Use a search-friendly title such as "[Product] is it worth buying? Multi-day test vs [competitor]".
+2. Give the conclusion in the first paragraph for users who want a quick answer.
+3. Include usage timeline, concrete scenarios, observable changes, comparison with 1-2 competitors, and 1-2 minor drawbacks.
+4. End with clear recommendations by skin type, budget, or scenario.
+5. Add a short key-takeaways checklist for saving.
+6. Write in first person and avoid brand-style claims or empty hype.`,
+        changeReasons: [
+          'Increase search keyword coverage for search-driven discovery.',
+          'Add comparison and checklist structures to improve save value.',
+          'Replace brand-style selling points with first-person experience.',
+          'Give clear decision guidance for different user scenarios.',
+          'Add usage timeline and observable details to build trust.',
+        ],
+        expectedImprovements: [
+          'Search exposure may cover more long-tail intent keywords.',
+          'Save rate is expected to improve because the content becomes more reference-worthy.',
+          'Trust-driven comments and product questions may increase.',
+          'Platform Fit is expected to improve after restructuring.',
+        ],
+      },
+      confidence: {
+        reasons: [
+          'Some recommendation statements lack concrete experience evidence.',
+          'The input has moderate detail, so part of the judgment depends on pattern recognition.',
+        ],
+      },
+      riskAssessment: {
+        riskTypeLabels: ['Unsupported effect or performance claim', 'Simulated real experience'],
+        reasons: [
+          'Some recommendation language is close to brand copy and lacks first-person evidence.',
+          'No obvious compliance red line appears, but weak authenticity may reduce user trust.',
+        ],
+      },
+      multiJudge: {
+        judges: [
+          {
+            keyConcern: 'Missing search intent and low save value',
+            evidence: 'The content lacks active-search keywords and save-worthy comparison structures.',
+            recommendation: 'Add search terms in the title and a key-takeaways checklist or comparison table.',
+          },
+          {
+            keyConcern: 'Purchase concerns are not addressed',
+            evidence: 'The content does not explain suitable or unsuitable users or answer price/effect concerns.',
+            recommendation: 'State unsuitable scenarios and give choices by budget or skin type.',
+          },
+          {
+            keyConcern: 'Incomplete soft recommendation path',
+            evidence: 'The content reads more like a product manual than a personal sharing post.',
+            recommendation: 'Rewrite from a first-person usage diary perspective.',
+          },
+          {
+            keyConcern: 'Some claims lack experience evidence',
+            evidence: 'No severe compliance issue is visible, but proof for authenticity is limited.',
+            recommendation: 'Add usage timeline and avoid overpromising product effects.',
+          },
+        ],
+        agreementSummary: 'The judges show medium disagreement, mainly between platform fit and audience psychology.',
+      },
+      summary: 'The content has basic information, but search intent, save value, and authenticity signals need to be strengthened before publishing.',
     },
   },
 };
@@ -410,6 +555,135 @@ const douyinResult: EvaluationResult = {
       scoreSpread: 34,
       summary: '四个评审维度分歧较大（34 分差），风险评审与其他三维度判断差异明显：无合规红线，但平台、受众和创作者适配均需改进',
       reviewRequired: true,
+    },
+  },
+  localized: {
+    zh: {
+      summary: '当前脚本缺少前三秒钩子、完播动机和账号记忆点，适合先重构开头和节奏后再进入拍摄。',
+    },
+    en: {
+      audiencePersona: {
+        userIntent: 'Passive feed exposure -> interest trigger -> emotional pull -> quick interaction',
+        psychologicalNeeds: [
+          'Attention competition: the first three seconds decide whether users stay or swipe away.',
+          'Emotional value: curiosity, contrast, resonance, or conflict is needed to keep watching.',
+          'Low-friction decisions: easier actions lead to more likes, follows, and shares.',
+          'Community identity: the content should match the user’s self-image and interest circle.',
+        ],
+        trustBarriers: [
+          'No opening hook leads to instant swiping.',
+          'Slow pacing causes completion rate to drop.',
+          'A strong sales tone can trigger negative comments.',
+        ],
+        dislikedExpressions: [
+          'Flat educational narration.',
+          'Monotone read-aloud scripts.',
+          'Hard advertising without content value.',
+        ],
+        contentPreference:
+          'Conflict or contrast openings over flat storytelling; fast rhythm over slow explanation; strong emotion over feature lists.',
+      },
+      badcases: [
+        {
+          type: 'Missing first-three-second hook',
+          badcaseLabel: 'Weak first-three-second hook',
+          evidence: 'The video begins with a brand logo and has no information or emotional hook.',
+          fix: 'Open with a conflict line, such as a surprising comparison between expensive and affordable products.',
+        },
+        {
+          type: 'Weak completion motivation',
+          badcaseLabel: 'Weak completion motivation',
+          evidence: 'The script lists product selling points without rhythm changes or suspense.',
+          fix: 'Use a suspense structure: problem, amplified pain point, solution reveal, and proof.',
+        },
+        {
+          type: 'Weak contrast or conflict',
+          badcaseLabel: 'Insufficient contrast',
+          evidence: 'The content stays purely positive and gives users little emotional fluctuation.',
+          fix: 'Add contrast between claimed effects and real effects, or between expensive and affordable options.',
+        },
+        {
+          type: 'Missing account memory point',
+          badcaseLabel: 'Weak account memory point',
+          evidence: 'The speaking style is not recognizable, so users may not remember the creator.',
+          fix: 'Add a signature phrase, gesture, or visual symbol to strengthen recognizability.',
+        },
+        {
+          type: 'Weak interaction trigger',
+          badcaseLabel: 'Weak interaction trigger',
+          evidence: 'The ending only asks for likes and follows without a designed discussion hook.',
+          fix: 'Ask a debate-style question to trigger comments.',
+        },
+      ],
+      promptV2: {
+        optimizedPrompt: `You are a Douyin content creator writing a short-video talking script for [product/topic].
+
+Structure:
+1. 0-3 seconds: open with conflict, contrast, or a counterintuitive claim.
+2. 3-15 seconds: amplify the audience’s core pain point.
+3. 15-25 seconds: introduce the solution and no more than three key selling points.
+4. 25-35 seconds: show proof through real usage, comparison, or scenario.
+5. 35-45 seconds: ask a debate-style or voting question to trigger comments.
+6. 45-50 seconds: end with a recognizable phrase, gesture, or visual cue.
+
+Style:
+- One information or emotion shift every 3-5 seconds.
+- Conversational tone, not broadcast narration.
+- Add visual cues for cuts, captions, and scene changes.
+- Avoid hard-ad style, read-aloud pacing, and low-information filler.`,
+        changeReasons: [
+          'Add a conflict hook to improve early retention.',
+          'Use fast segmented pacing to improve completion rate.',
+          'Add contrast to make the content more memorable.',
+          'Design interaction hooks to drive comments and shares.',
+          'Strengthen account recognizability with a memory point.',
+        ],
+        expectedImprovements: [
+          'First-three-second retention is expected to improve.',
+          'Overall completion rate may increase after pacing is tightened.',
+          'Comment and share intent should improve with stronger interaction hooks.',
+          'Platform Fit is expected to rise after the script is restructured.',
+        ],
+      },
+      confidence: {
+        reasons: [
+          'The script is short, so hook and completion judgments need to be verified with actual video performance.',
+          'The text lacks real shot execution, so some rhythm judgments are inferred from the script.',
+        ],
+      },
+      riskAssessment: {
+        riskTypeLabels: ['Insufficient input context'],
+        reasons: [
+          'The script lacks actual video material, so completion and interaction forecasts are uncertain.',
+          'No obvious compliance red line or exaggerated claim appears in the text.',
+        ],
+      },
+      multiJudge: {
+        judges: [
+          {
+            keyConcern: 'Weak first-three-second hook and low completion motivation',
+            evidence: 'The script opens with a brand logo and lacks conflict, contrast, or a pain-point hook.',
+            recommendation: 'Replace the logo opening with a conflict line and add a suspense progression.',
+          },
+          {
+            keyConcern: 'Emotional trigger is not strong enough',
+            evidence: 'The content lacks contrast, so users have little emotional reason to stay.',
+            recommendation: 'Add a comparison between expensive and affordable products or between claims and real effects.',
+          },
+          {
+            keyConcern: 'Weak account memory point and interaction guide',
+            evidence: 'The speaking style is not recognizable, and the ending has no discussion hook.',
+            recommendation: 'Add a signature phrase or gesture and ask a debate-style question.',
+          },
+          {
+            keyConcern: 'No obvious text-level risk',
+            evidence: 'No clear compliance red line appears, but real video execution still needs review.',
+            recommendation: 'Review the final video for pacing and visual expression after filming.',
+          },
+        ],
+        agreementSummary: 'The judges show low agreement because risk is low while platform, audience, and creator fit all need revision.',
+      },
+      summary: 'The script lacks a strong opening hook, completion motivation, and account memory point; restructure the opening and pacing before filming.',
     },
   },
 };

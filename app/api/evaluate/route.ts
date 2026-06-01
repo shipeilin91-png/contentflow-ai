@@ -40,11 +40,19 @@ Your job is to evaluate AI-generated content using the TriFlow framework across 
 - IP memory point: Is there a signature phrase, gesture, or visual symbol?
 - Avoid: flat narration, lecture-style delivery, hard-ad format, content devoid of emotional peaks
 
-## Language Requirement
-ALL user-facing content MUST be output in Chinese (中文). Field names can remain in English, but the VALUES — explanations, reasons, evidence, suggestions, optimized prompt text, psychological needs, trust barriers, content preferences, badcase type/evidence/fix, confidence reasons, risk reasons, judge keyConcern/evidence/recommendation, changeReasons, expectedImprovements — must all be in Chinese. A small amount of English professional terminology may be used as title modifiers, but the body text must be Chinese.
+## Bilingual Output Requirement
+Return the existing top-level EvaluationResult fields AND add a localized object with both zh and en content.
+
+- Top-level fields should remain compatible with the existing app and should use Simplified Chinese as the default fallback.
+- localized.zh must contain Simplified Chinese user-facing copy.
+- localized.en must contain natural English user-facing copy.
+- Field names must stay in English.
+- Do not only translate section titles. Translate the actual body content.
+- userIntent, psychologicalNeeds, trustBarriers, dislikedExpressions, contentPreference, badcase type/evidence/fix, promptV2 optimizedPrompt/changeReasons/expectedImprovements, confidence reasons, risk reasons, multiJudge keyConcern/evidence/recommendation, and agreement summary must have both Chinese and English versions.
+- English can be concise, but every localized.en field must contain meaningful English content.
 
 ## Strict Simplified Chinese Output Requirement
-- 所有用户可见字段值必须使用简体中文。
+- 所有顶层用户可见字段值必须使用简体中文，作为旧版兼容 fallback。
 - 只允许 JSON 字段名使用英文。
 - 只允许标题或名称中少量保留英文专业术语作为辅助，例如 "Audience Persona"；解释正文不要输出英文句子。
 - audiencePersona.userIntent 必须是简体中文。
@@ -57,7 +65,7 @@ ALL user-facing content MUST be output in Chinese (中文). Field names can rema
 - confidence.reasons 每一项必须是简体中文。
 - riskAssessment.reasons 每一项必须是简体中文。
 - multiJudge.judges[].keyConcern、multiJudge.judges[].evidence、multiJudge.judges[].recommendation 必须是简体中文。
-- 不要输出英文解释句，不要把用户可见正文写成英文。
+- 顶层字段不要输出英文解释句，不要把顶层用户可见正文写成英文；英文正文放入 localized.en。
 
 ## Rules You MUST Follow
 1. Score honestly based on the content provided — do NOT inflate scores
@@ -304,6 +312,88 @@ Return a SINGLE JSON object with exactly this structure:
       "summary": "中文字符串：用一句话说明一致性等级和分歧来源",
       "reviewRequired": true/false
     }
+  },
+  "localized": {
+    "zh": {
+      "audiencePersona": {
+        "userIntent": "简体中文用户路径",
+        "psychologicalNeeds": ["简体中文心理需求1", "简体中文心理需求2"],
+        "trustBarriers": ["简体中文信任障碍1", "简体中文信任障碍2"],
+        "dislikedExpressions": ["简体中文反感表达1", "简体中文反感表达2"],
+        "contentPreference": "简体中文内容偏好"
+      },
+      "badcases": [
+        {
+          "type": "简体中文问题类型",
+          "badcaseLabel": "简体中文问题标签",
+          "evidence": "简体中文证据",
+          "fix": "简体中文修复建议"
+        }
+      ],
+      "promptV2": {
+        "optimizedPrompt": "简体中文完整优化 Prompt",
+        "changeReasons": ["简体中文变更原因1"],
+        "expectedImprovements": ["简体中文预期改进1"]
+      },
+      "confidence": {
+        "reasons": ["简体中文置信度原因1"]
+      },
+      "riskAssessment": {
+        "reasons": ["简体中文风险原因1"],
+        "riskTypeLabels": ["简体中文风险标签1"]
+      },
+      "multiJudge": {
+        "judges": [
+          {
+            "keyConcern": "简体中文关键担忧",
+            "evidence": "简体中文评审证据",
+            "recommendation": "简体中文建议"
+          }
+        ],
+        "agreementSummary": "简体中文一致性总结"
+      },
+      "summary": "简体中文评测摘要"
+    },
+    "en": {
+      "audiencePersona": {
+        "userIntent": "English user journey",
+        "psychologicalNeeds": ["English psychological need 1", "English psychological need 2"],
+        "trustBarriers": ["English trust barrier 1", "English trust barrier 2"],
+        "dislikedExpressions": ["English disliked expression 1", "English disliked expression 2"],
+        "contentPreference": "English content preference"
+      },
+      "badcases": [
+        {
+          "type": "English issue type",
+          "badcaseLabel": "English issue label",
+          "evidence": "English evidence",
+          "fix": "English fix recommendation"
+        }
+      ],
+      "promptV2": {
+        "optimizedPrompt": "Complete optimized prompt in English",
+        "changeReasons": ["English change reason 1"],
+        "expectedImprovements": ["English expected improvement 1"]
+      },
+      "confidence": {
+        "reasons": ["English confidence reason 1"]
+      },
+      "riskAssessment": {
+        "reasons": ["English risk reason 1"],
+        "riskTypeLabels": ["English risk label 1"]
+      },
+      "multiJudge": {
+        "judges": [
+          {
+            "keyConcern": "English key concern",
+            "evidence": "English judge evidence",
+            "recommendation": "English recommendation"
+          }
+        ],
+        "agreementSummary": "English agreement summary"
+      },
+      "summary": "English evaluation summary"
+    }
   }
 }
 
@@ -313,7 +403,7 @@ CRITICAL:
 - All scores: integers from 0 to 100
 - promptV2.optimizedPrompt: must be a complete, usable prompt, NOT a summary
 - promptV2.changeReasons: each reason must reference specific badcases being fixed
-- 请用简体中文填写所有字段值。不要输出英文句子。字段名保持 JSON schema 英文即可。
+- 顶层字段和 localized.zh 请用简体中文填写。localized.en 请用自然英文填写。不要让英文正文缺失或只重复中文。
 - Output ONLY the JSON object — no markdown fences, no extra text`;
 
   return prompt;

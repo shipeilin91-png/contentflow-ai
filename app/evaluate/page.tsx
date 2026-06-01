@@ -25,6 +25,185 @@ type ResultLanguage = 'zh' | 'en';
 const cardClass = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm';
 const sectionLabel = 'text-xs font-medium text-slate-400';
 
+const EN_RISK_LABEL_MAP: Record<string, string> = {
+  unsupported_claim: 'Unsupported effect/performance claim',
+  exaggerated_promotion: 'Exaggerated promotion',
+  fake_experience: 'Simulated real experience',
+  platform_evasion: 'Platform evasion tendency',
+  medical_financial_legal_risk: 'Medical/financial/legal high risk',
+  low_context_confidence: 'Insufficient input context',
+  plagiarism_imitation_risk: 'Imitation or repurposing risk',
+};
+
+const COPY = {
+  zh: {
+    resultLanguage: '结果语言',
+    evaluationSummary: '评测摘要',
+    overallEffectiveness: '综合有效性',
+    riskLevel: '风险等级',
+    notReturned: '未返回',
+    review: '人工复核',
+    reviewRequired: '建议复核',
+    noMandatoryReview: '暂无强制复核',
+    agreement: '评审一致性',
+    scoreNote: '评分范围：0-100。分数越高代表越适配当前平台、受众和内容目标；评分仅用于内容优化参考，不代表真实平台推荐结果或转化预测。',
+    sectionA: '受众画像',
+    sectionB: 'TriFlow 三方评分',
+    sectionC: '问题归因',
+    sectionD: 'Prompt v2 优化建议',
+    sectionE: '多评审一致性',
+    sectionF: '评测置信度',
+    sectionG: '风险分层',
+    sectionH: '保存与校准',
+    userIntent: '用户意图',
+    psychologicalNeeds: '心理需求',
+    trustBarriers: '信任障碍',
+    contentPreference: '内容偏好',
+    scoreStandard: '评分标准：评分范围 0-100',
+    scoreBands: [
+      '0-39：明显不合格，需要重写',
+      '40-59：较弱，需要大幅修改',
+      '60-74：基本可用，仍需优化',
+      '75-89：表现良好，可进入发布前复核',
+      '90-100：高度适配，建议结合实际素材复核',
+    ],
+    scoreLabels: {
+      poor: '明显不合格',
+      weak: '较弱',
+      usable: '基本可用',
+      good: '表现良好',
+      excellent: '高度适配',
+    },
+    scoreDescriptions: {
+      poor: '内容与平台、受众或目标明显不匹配，需要重写或重构内容策略。',
+      weak: '有基础信息，但缺少关键平台信号或用户信任支撑，需要大幅修改。',
+      usable: '方向基本正确，但仍存在明显 badcase，建议优化后再使用。',
+      good: '大部分指标匹配，可进入发布前人工复核阶段。',
+      excellent: '平台、受众和目标高度一致，但仍建议根据实际素材复核。',
+    },
+    platformFit: '平台适配',
+    audienceFit: '受众适配',
+    creatorGoalFit: '创作者目标',
+    overall: '综合有效性',
+    issueLayer: '问题层级',
+    issueType: '问题类型',
+    platformLayer: '平台层',
+    audienceLayer: '受众层',
+    creatorLayer: '创作者层',
+    evidence: '原文证据',
+    fix: '修复建议',
+    copyPrompt: '复制 Prompt',
+    copied: '已复制',
+    changeReasons: '变更原因',
+    expectedImprovements: '预期改进',
+    spread: '分差',
+    highAgreement: '高一致',
+    mediumAgreement: '中等一致',
+    lowAgreement: '低一致',
+    pass: '通过',
+    highRisk: '高风险',
+    needsRevision: '需修改',
+    keyConcern: '关键担忧',
+    recommendation: '建议',
+    multiJudgeMissing: '当前评测结果未返回多评审数据，旧结果仍可正常查看其他模块。',
+    highConfidence: '高置信',
+    mediumConfidence: '中置信',
+    lowConfidence: '低置信',
+    confidenceMissing: '当前评测结果未返回置信度数据。',
+    lowRisk: '低风险',
+    mediumRisk: '中风险',
+    riskMissing: '当前评测结果未返回风险分层数据。',
+    riskDisclaimer: '风险分层仅用于内容优化与人工复核参考，不代表法律意见、平台审核结果或真实转化预测。',
+    multiJudgeDisclaimer: '多评审机制用于辅助识别评测分歧和复核优先级，不代表真实平台分发结果、法律意见或商业转化预测。',
+    actions: '保存与沉淀',
+    calibration: '人工校准',
+    fallbackSummary: '当前内容仍需要优化平台适配、受众信任和创作者目标路径，再进入发布前复核。',
+  },
+  en: {
+    resultLanguage: 'Result Language',
+    evaluationSummary: 'Evaluation Summary',
+    overallEffectiveness: 'Overall Effectiveness',
+    riskLevel: 'Risk Level',
+    notReturned: 'Not returned',
+    review: 'Human Review',
+    reviewRequired: 'Recommended',
+    noMandatoryReview: 'Not required',
+    agreement: 'Judge Agreement',
+    scoreNote: 'Score range: 0-100. Higher scores mean stronger alignment with the platform, audience, and content goal. Scores are for optimization reference only, not real distribution or conversion predictions.',
+    sectionA: 'Audience Persona',
+    sectionB: 'TriFlow Scores',
+    sectionC: 'Badcase Diagnosis',
+    sectionD: 'Prompt v2 Optimization',
+    sectionE: 'Multi-Judge Evaluation',
+    sectionF: 'Confidence',
+    sectionG: 'Risk Assessment',
+    sectionH: 'Actions & Calibration',
+    userIntent: 'User Intent',
+    psychologicalNeeds: 'Psychological Needs',
+    trustBarriers: 'Trust Barriers',
+    contentPreference: 'Content Preference',
+    scoreStandard: 'Score Range: 0-100',
+    scoreBands: [
+      '0-39: Poor, rewrite needed',
+      '40-59: Weak, major revision needed',
+      '60-74: Usable, still needs optimization',
+      '75-89: Good, ready for pre-publish review',
+      '90-100: Highly Aligned, still review against real assets',
+    ],
+    scoreLabels: {
+      poor: 'Poor',
+      weak: 'Weak',
+      usable: 'Usable',
+      good: 'Good',
+      excellent: 'Highly Aligned',
+    },
+    scoreDescriptions: {
+      poor: 'The content is clearly misaligned with the platform, audience, or goal and needs to be rewritten.',
+      weak: 'The content has basic information but lacks key platform signals or trust support and needs major revision.',
+      usable: 'The direction is mostly workable, but visible badcases remain and should be optimized before use.',
+      good: 'Most indicators are aligned and the content can move into pre-publish human review.',
+      excellent: 'The platform, audience, and goal are strongly aligned, but real assets should still be reviewed.',
+    },
+    platformFit: 'Platform Fit',
+    audienceFit: 'Audience Fit',
+    creatorGoalFit: 'Creator Goal Fit',
+    overall: 'Overall',
+    issueLayer: 'Issue Layer',
+    issueType: 'Issue Type',
+    platformLayer: 'Platform',
+    audienceLayer: 'Audience',
+    creatorLayer: 'Creator',
+    evidence: 'Evidence',
+    fix: 'Fix Recommendation',
+    copyPrompt: 'Copy Prompt',
+    copied: 'Copied',
+    changeReasons: 'Change Reasons',
+    expectedImprovements: 'Expected Improvements',
+    spread: 'Spread',
+    highAgreement: 'High Agreement',
+    mediumAgreement: 'Medium Agreement',
+    lowAgreement: 'Low Agreement',
+    pass: 'Pass',
+    highRisk: 'High Risk',
+    needsRevision: 'Needs Revision',
+    keyConcern: 'Key Concern',
+    recommendation: 'Recommendation',
+    multiJudgeMissing: 'This result does not include multi-judge data. Other report sections are still available.',
+    highConfidence: 'High Confidence',
+    mediumConfidence: 'Medium Confidence',
+    lowConfidence: 'Low Confidence',
+    confidenceMissing: 'This result does not include confidence data.',
+    lowRisk: 'Low Risk',
+    mediumRisk: 'Medium Risk',
+    riskMissing: 'This result does not include risk assessment data.',
+    riskDisclaimer: 'Risk assessment is only for content optimization and review prioritization. It is not legal advice, a platform moderation result, or a conversion prediction.',
+    multiJudgeDisclaimer: 'Multi-judge evaluation helps identify disagreement and review priority. It does not represent real platform distribution, legal advice, or commercial prediction.',
+    actions: 'Actions',
+    calibration: 'Human Calibration',
+    fallbackSummary: 'The content still needs stronger platform fit, audience trust, and creator-goal alignment before pre-publish review.',
+  },
+} satisfies Record<ResultLanguage, Record<string, unknown>>;
+
 // ── Helpers ─────────────────────────────────────────────────────────
 function layerBadge(layer: string) {
   switch (layer) {
@@ -38,25 +217,50 @@ function sectionIcon(cls: string, letter: string) {
   return <span className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold ${cls}`}>{letter}</span>;
 }
 
-function riskLabel(riskType: string) {
+function getScoreKey(score: number) {
+  if (score >= 90) return 'excellent';
+  if (score >= 75) return 'good';
+  if (score >= 60) return 'usable';
+  if (score >= 40) return 'weak';
+  return 'poor';
+}
+
+function localizedScoreBand(score: number, language: ResultLanguage) {
+  const key = getScoreKey(score);
+  return {
+    label: COPY[language].scoreLabels[key],
+    description: COPY[language].scoreDescriptions[key],
+  };
+}
+
+function riskLabel(riskType: string, language: ResultLanguage, localizedLabels?: string[], index?: number) {
+  if (localizedLabels?.[index ?? -1]) return localizedLabels[index ?? 0];
+  if (language === 'en') return EN_RISK_LABEL_MAP[riskType] || 'Other risk';
   return RISK_LABEL_MAP[riskType] || '其他风险';
 }
 
-function sectionTitle(title: string, subtitle: string) {
+function sectionTitle(title: string, subtitle?: string) {
   return (
     <span className="flex flex-col leading-tight">
       <span>{title}</span>
-      <span className="mt-0.5 text-[10px] font-normal text-slate-400">{subtitle}</span>
+      {subtitle && <span className="mt-0.5 text-[10px] font-normal text-slate-400">{subtitle}</span>}
     </span>
   );
 }
 
-function summarizeResult(result: EvaluationResult): string {
+function summarizeResult(result: EvaluationResult, language: ResultLanguage): string {
+  const localizedSummary = result.localized?.[language]?.summary;
+  if (localizedSummary) return localizedSummary;
+
   const topBadcases = result.badcases
     .slice(0, 2)
     .map((bc) => bc.badcaseLabel || bc.type)
     .filter(Boolean)
     .join('、');
+
+  if (language === 'en') {
+    return COPY.en.fallbackSummary;
+  }
 
   if (result.triFlowScores.overallEffectiveness >= 75) {
     return topBadcases
@@ -66,7 +270,7 @@ function summarizeResult(result: EvaluationResult): string {
 
   return topBadcases
     ? `当前内容的主要短板集中在 ${topBadcases}。建议先按问题归因修正结构和信任信号，再进入发布前复核。`
-    : '当前内容仍需要优化平台适配、受众信任和创作者目标路径，再进入发布前复核。';
+    : COPY.zh.fallbackSummary;
 }
 
 function looksEnglish(text?: string) {
@@ -88,60 +292,127 @@ function zhArray(items: string[] | undefined, fallback: string[]) {
 
 function getChineseReport(result: EvaluationResult, platform: string): EvaluationResult {
   const fallback = getMockResult(platform);
+  const localized = result.localized?.zh || fallback.localized?.zh;
   return {
     ...result,
     audiencePersona: {
-      userIntent: zhText(result.audiencePersona.userIntent, fallback.audiencePersona.userIntent),
-      psychologicalNeeds: zhArray(result.audiencePersona.psychologicalNeeds, fallback.audiencePersona.psychologicalNeeds),
-      trustBarriers: zhArray(result.audiencePersona.trustBarriers, fallback.audiencePersona.trustBarriers),
-      dislikedExpressions: zhArray(result.audiencePersona.dislikedExpressions, fallback.audiencePersona.dislikedExpressions),
-      contentPreference: zhText(result.audiencePersona.contentPreference, fallback.audiencePersona.contentPreference),
+      userIntent: localized?.audiencePersona?.userIntent || zhText(result.audiencePersona.userIntent, fallback.audiencePersona.userIntent),
+      psychologicalNeeds: localized?.audiencePersona?.psychologicalNeeds || zhArray(result.audiencePersona.psychologicalNeeds, fallback.audiencePersona.psychologicalNeeds),
+      trustBarriers: localized?.audiencePersona?.trustBarriers || zhArray(result.audiencePersona.trustBarriers, fallback.audiencePersona.trustBarriers),
+      dislikedExpressions: localized?.audiencePersona?.dislikedExpressions || zhArray(result.audiencePersona.dislikedExpressions, fallback.audiencePersona.dislikedExpressions),
+      contentPreference: localized?.audiencePersona?.contentPreference || zhText(result.audiencePersona.contentPreference, fallback.audiencePersona.contentPreference),
     },
     badcases: result.badcases.map((bc, index) => {
       const fallbackBadcase = fallback.badcases[index] || fallback.badcases[0];
+      const localizedBadcase = localized?.badcases?.[index];
       return {
         ...bc,
-        type: zhText(bc.type, fallbackBadcase.type),
-        evidence: zhText(bc.evidence, fallbackBadcase.evidence),
-        fix: zhText(bc.fix, fallbackBadcase.fix),
-        badcaseLabel: zhText(bc.badcaseLabel || bc.type, fallbackBadcase.badcaseLabel || fallbackBadcase.type),
+        type: localizedBadcase?.type || zhText(bc.type, fallbackBadcase.type),
+        evidence: localizedBadcase?.evidence || zhText(bc.evidence, fallbackBadcase.evidence),
+        fix: localizedBadcase?.fix || zhText(bc.fix, fallbackBadcase.fix),
+        badcaseLabel: localizedBadcase?.badcaseLabel || zhText(bc.badcaseLabel || bc.type, fallbackBadcase.badcaseLabel || fallbackBadcase.type),
       };
     }),
     promptV2: {
-      optimizedPrompt: zhText(result.promptV2.optimizedPrompt, fallback.promptV2.optimizedPrompt),
-      changeReasons: zhArray(result.promptV2.changeReasons, fallback.promptV2.changeReasons),
-      expectedImprovements: zhArray(result.promptV2.expectedImprovements, fallback.promptV2.expectedImprovements),
+      optimizedPrompt: localized?.promptV2?.optimizedPrompt || zhText(result.promptV2.optimizedPrompt, fallback.promptV2.optimizedPrompt),
+      changeReasons: localized?.promptV2?.changeReasons || zhArray(result.promptV2.changeReasons, fallback.promptV2.changeReasons),
+      expectedImprovements: localized?.promptV2?.expectedImprovements || zhArray(result.promptV2.expectedImprovements, fallback.promptV2.expectedImprovements),
     },
     confidence: result.confidence
       ? {
           ...result.confidence,
-          reasons: zhArray(result.confidence.reasons, fallback.confidence?.reasons || ['评测置信度需要结合输入完整度判断']),
+          reasons: localized?.confidence?.reasons || zhArray(result.confidence.reasons, fallback.confidence?.reasons || ['评测置信度需要结合输入完整度判断']),
         }
       : undefined,
     riskAssessment: result.riskAssessment
       ? {
           ...result.riskAssessment,
-          reasons: zhArray(result.riskAssessment.reasons, fallback.riskAssessment?.reasons || ['当前风险判断仅用于内容优化参考']),
+          reasons: localized?.riskAssessment?.reasons || zhArray(result.riskAssessment.reasons, fallback.riskAssessment?.reasons || ['当前风险判断仅用于内容优化参考']),
         }
       : undefined,
     multiJudge: result.multiJudge
       ? {
           judges: result.multiJudge.judges.map((judge, index) => {
             const fallbackJudge = fallback.multiJudge?.judges[index] || fallback.multiJudge?.judges[0];
+            const localizedJudge = localized?.multiJudge?.judges?.[index];
             return {
               ...judge,
               name: zhText(judge.name, fallbackJudge?.name || '评审员'),
-              keyConcern: zhText(judge.keyConcern, fallbackJudge?.keyConcern || '需要进一步复核关键问题'),
-              evidence: zhText(judge.evidence, fallbackJudge?.evidence || '需要结合原文证据复核'),
-              recommendation: zhText(judge.recommendation, fallbackJudge?.recommendation || '建议人工复核后再发布'),
+              keyConcern: localizedJudge?.keyConcern || zhText(judge.keyConcern, fallbackJudge?.keyConcern || '需要进一步复核关键问题'),
+              evidence: localizedJudge?.evidence || zhText(judge.evidence, fallbackJudge?.evidence || '需要结合原文证据复核'),
+              recommendation: localizedJudge?.recommendation || zhText(judge.recommendation, fallbackJudge?.recommendation || '建议人工复核后再发布'),
             };
           }),
           agreement: {
             ...result.multiJudge.agreement,
-            summary: zhText(result.multiJudge.agreement.summary, fallback.multiJudge?.agreement.summary || '评审维度存在分歧，建议人工复核。'),
+            summary: localized?.multiJudge?.agreementSummary || zhText(result.multiJudge.agreement.summary, fallback.multiJudge?.agreement.summary || '评审维度存在分歧，建议人工复核。'),
           },
         }
       : undefined,
+  };
+}
+
+function getLocalizedReport(result: EvaluationResult, platform: string, language: ResultLanguage): EvaluationResult {
+  if (language === 'zh') return getChineseReport(result, platform);
+
+  const fallback = getMockResult(platform);
+  const localized = result.localized?.en || fallback.localized?.en;
+  const fallbackEn = fallback.localized?.en;
+
+  return {
+    ...result,
+    audiencePersona: {
+      userIntent: localized?.audiencePersona?.userIntent || fallbackEn?.audiencePersona?.userIntent || result.audiencePersona.userIntent,
+      psychologicalNeeds: localized?.audiencePersona?.psychologicalNeeds || fallbackEn?.audiencePersona?.psychologicalNeeds || result.audiencePersona.psychologicalNeeds,
+      trustBarriers: localized?.audiencePersona?.trustBarriers || fallbackEn?.audiencePersona?.trustBarriers || result.audiencePersona.trustBarriers,
+      dislikedExpressions: localized?.audiencePersona?.dislikedExpressions || fallbackEn?.audiencePersona?.dislikedExpressions || result.audiencePersona.dislikedExpressions,
+      contentPreference: localized?.audiencePersona?.contentPreference || fallbackEn?.audiencePersona?.contentPreference || result.audiencePersona.contentPreference,
+    },
+    badcases: result.badcases.map((bc, index) => {
+      const localizedBadcase = localized?.badcases?.[index] || fallbackEn?.badcases?.[index];
+      return {
+        ...bc,
+        type: localizedBadcase?.type || bc.type,
+        badcaseLabel: localizedBadcase?.badcaseLabel || bc.badcaseLabel || bc.type,
+        evidence: localizedBadcase?.evidence || bc.evidence,
+        fix: localizedBadcase?.fix || bc.fix,
+      };
+    }),
+    promptV2: {
+      optimizedPrompt: localized?.promptV2?.optimizedPrompt || fallbackEn?.promptV2?.optimizedPrompt || result.promptV2.optimizedPrompt,
+      changeReasons: localized?.promptV2?.changeReasons || fallbackEn?.promptV2?.changeReasons || result.promptV2.changeReasons,
+      expectedImprovements: localized?.promptV2?.expectedImprovements || fallbackEn?.promptV2?.expectedImprovements || result.promptV2.expectedImprovements,
+    },
+    confidence: result.confidence
+      ? {
+          ...result.confidence,
+          reasons: localized?.confidence?.reasons || fallbackEn?.confidence?.reasons || result.confidence.reasons,
+        }
+      : undefined,
+    riskAssessment: result.riskAssessment
+      ? {
+          ...result.riskAssessment,
+          reasons: localized?.riskAssessment?.reasons || fallbackEn?.riskAssessment?.reasons || result.riskAssessment.reasons,
+        }
+      : undefined,
+    multiJudge: result.multiJudge
+      ? {
+          judges: result.multiJudge.judges.map((judge, index) => {
+            const localizedJudge = localized?.multiJudge?.judges?.[index] || fallbackEn?.multiJudge?.judges?.[index];
+            return {
+              ...judge,
+              keyConcern: localizedJudge?.keyConcern || judge.keyConcern,
+              evidence: localizedJudge?.evidence || judge.evidence,
+              recommendation: localizedJudge?.recommendation || judge.recommendation,
+            };
+          }),
+          agreement: {
+            ...result.multiJudge.agreement,
+            summary: localized?.multiJudge?.agreementSummary || fallbackEn?.multiJudge?.agreementSummary || result.multiJudge.agreement.summary,
+          },
+        }
+      : undefined,
+    localized: result.localized || fallback.localized,
   };
 }
 
@@ -244,17 +515,15 @@ export default function EvaluatePage() {
     catch { /* silent */ }
   };
 
-  const report = result
-    ? resultLanguage === 'zh'
-      ? getChineseReport(result, platform)
-      : result
-    : null;
+  const report = result ? getLocalizedReport(result, platform, resultLanguage) : null;
+  const t = COPY[resultLanguage];
   const overall = report?.triFlowScores.overallEffectiveness ?? 0;
   const band = getScoreBand(overall);
+  const localizedBand = localizedScoreBand(overall, resultLanguage);
   const hasConfidence = !!report?.confidence;
   const hasRisk = !!report?.riskAssessment;
   const hasMultiJudge = !!report?.multiJudge;
-  const summaryText = report ? summarizeResult(report) : '';
+  const summaryText = report ? summarizeResult(report, resultLanguage) : '';
 
   // ── Render ──────────────────────────────────────────────────────
   return (
@@ -393,8 +662,8 @@ export default function EvaluatePage() {
 
               <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 <div>
-                  <span className="block text-sm font-semibold text-slate-800">结果语言</span>
-                  <span className="text-[10px] text-slate-400">Result Language</span>
+                  <span className="block text-sm font-semibold text-slate-800">{t.resultLanguage}</span>
+                  <span className="text-[10px] text-slate-400">{resultLanguage === 'zh' ? 'Result Language' : '结果语言'}</span>
                 </div>
                 <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
                   {[
@@ -416,66 +685,66 @@ export default function EvaluatePage() {
               {/* ── Evaluation Summary ─────────────────────── */}
               <section className={`rounded-2xl border p-5 shadow-sm ${band.bg}`}>
                 <h3 className="text-sm font-semibold text-slate-800 mb-3">
-                  {sectionTitle('评测摘要', 'Evaluation Summary')}
+                  {sectionTitle(t.evaluationSummary, resultLanguage === 'zh' ? 'Evaluation Summary' : '评测摘要')}
                 </h3>
                 <div className="flex flex-wrap items-end gap-4 mb-3">
                   <div>
-                    <span className="block text-[10px] font-medium text-slate-400">综合有效性</span>
+                    <span className="block text-[10px] font-medium text-slate-400">{t.overallEffectiveness}</span>
                     <span className={`mt-1 block text-3xl font-bold tracking-tight ${band.color}`}>{overall}/100</span>
                   </div>
                   <div>
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${band.color} ${band.bg.includes('red') ? 'bg-red-100' : band.bg.includes('orange') ? 'bg-orange-100' : band.bg.includes('amber') ? 'bg-amber-100' : 'bg-emerald-100'}`}>{band.label}</span>
-                    <p className="mt-1 text-xs text-slate-600 max-w-sm">{band.description}</p>
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${band.color} ${band.bg.includes('red') ? 'bg-red-100' : band.bg.includes('orange') ? 'bg-orange-100' : band.bg.includes('amber') ? 'bg-amber-100' : 'bg-emerald-100'}`}>{localizedBand.label}</span>
+                    <p className="mt-1 text-xs text-slate-600 max-w-sm">{localizedBand.description}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[10px]">
                   {hasRisk ? (
                     <span className={`inline-flex rounded-full px-2 py-0.5 font-medium ${report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-600' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      风险等级：{report.riskAssessment!.riskLevel === 'high' ? '高风险' : report.riskAssessment!.riskLevel === 'medium' ? '中风险' : '低风险'}
+                      {t.riskLevel}: {report.riskAssessment!.riskLevel === 'high' ? t.highRisk : report.riskAssessment!.riskLevel === 'medium' ? t.mediumRisk : t.lowRisk}
                     </span>
                   ) : (
-                    <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500">风险等级：未返回</span>
+                    <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500">{t.riskLevel}: {t.notReturned}</span>
                   )}
                   {hasMultiJudge && (
                     <span className={`inline-flex rounded-full px-2 py-0.5 font-medium ${report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
-                      评审一致性：{report.multiJudge!.agreement.level === 'high' ? '高一致' : report.multiJudge!.agreement.level === 'medium' ? '中等一致' : '低一致'}
+                      {t.agreement}: {report.multiJudge!.agreement.level === 'high' ? t.highAgreement : report.multiJudge!.agreement.level === 'medium' ? t.mediumAgreement : t.lowAgreement}
                     </span>
                   )}
                   <span className={`inline-flex rounded-full px-2 py-0.5 font-medium ${(report.riskAssessment?.reviewRequired || report.multiJudge?.agreement?.reviewRequired) ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
-                    人工复核：{(report.riskAssessment?.reviewRequired || report.multiJudge?.agreement?.reviewRequired) ? '建议复核' : '暂无强制复核'}
+                    {t.review}: {(report.riskAssessment?.reviewRequired || report.multiJudge?.agreement?.reviewRequired) ? t.reviewRequired : t.noMandatoryReview}
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-slate-700">{summaryText}</p>
-                <p className="mt-3 text-[10px] text-slate-400">评分范围：0-100。分数越高代表越适配当前平台、受众和内容目标；评分仅用于内容优化参考，不代表真实平台推荐结果或转化预测。</p>
+                <p className="mt-3 text-[10px] text-slate-400">{t.scoreNote}</p>
               </section>
 
-              <AccordionSection letter="A" title="受众画像" subtitle="Audience Persona" iconClass="bg-blue-100 text-blue-700" open={openSection === 'A'} onToggle={() => toggleSection('A')}>
+              <AccordionSection letter="A" title={t.sectionA} subtitle={resultLanguage === 'zh' ? 'Audience Persona' : '受众画像'} iconClass="bg-blue-100 text-blue-700" open={openSection === 'A'} onToggle={() => toggleSection('A')}>
                 <div className="space-y-3 text-sm">
-                  <div><span className={sectionLabel}>用户意图 <span className="text-slate-300">User Intent</span></span><p className="mt-0.5 text-xs text-slate-700">{report.audiencePersona.userIntent}</p></div>
-                  <div><span className={sectionLabel}>心理需求 <span className="text-slate-300">Psychological Needs</span></span><ul className="mt-1 space-y-1">{report.audiencePersona.psychologicalNeeds.map((n,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-blue-400"/>{n}</li>)}</ul></div>
-                  <div><span className={sectionLabel}>信任障碍 <span className="text-slate-300">Trust Barriers</span></span><ul className="mt-1 space-y-1">{report.audiencePersona.trustBarriers.map((t,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-amber-400"/>{t}</li>)}</ul></div>
-                  <div><span className={sectionLabel}>内容偏好 <span className="text-slate-300">Content Preference</span></span><p className="mt-0.5 text-xs text-slate-700">{report.audiencePersona.contentPreference}</p></div>
+                  <div><span className={sectionLabel}>{t.userIntent}</span><p className="mt-0.5 text-xs text-slate-700">{report.audiencePersona.userIntent}</p></div>
+                  <div><span className={sectionLabel}>{t.psychologicalNeeds}</span><ul className="mt-1 space-y-1">{report.audiencePersona.psychologicalNeeds.map((n,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-blue-400"/>{n}</li>)}</ul></div>
+                  <div><span className={sectionLabel}>{t.trustBarriers}</span><ul className="mt-1 space-y-1">{report.audiencePersona.trustBarriers.map((barrier,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-amber-400"/>{barrier}</li>)}</ul></div>
+                  <div><span className={sectionLabel}>{t.contentPreference}</span><p className="mt-0.5 text-xs text-slate-700">{report.audiencePersona.contentPreference}</p></div>
                 </div>
               </AccordionSection>
 
-              <AccordionSection letter="B" title="TriFlow 三方评分" subtitle="Platform / Audience / Creator Goal" iconClass="bg-indigo-100 text-indigo-700" open={openSection === 'B'} onToggle={() => toggleSection('B')}>
+              <AccordionSection letter="B" title={t.sectionB} subtitle={resultLanguage === 'zh' ? 'Platform / Audience / Creator Goal' : '平台 / 受众 / 创作者目标'} iconClass="bg-indigo-100 text-indigo-700" open={openSection === 'B'} onToggle={() => toggleSection('B')}>
                 <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3">
-                  <p className="text-xs font-medium text-slate-600">评分标准：评分范围 0-100</p>
+                  <p className="text-xs font-medium text-slate-600">{t.scoreStandard}</p>
                   <div className="mt-2 grid gap-1 text-[10px] text-slate-500 sm:grid-cols-2">
-                    {SCORE_BANDS.map((scoreBand) => (
-                      <span key={scoreBand.label}>{scoreBand.min}-{scoreBand.max}：{scoreBand.label}，{scoreBand.label === '明显不合格' ? '需要重写' : scoreBand.label === '较弱' ? '需要大幅修改' : scoreBand.label === '基本可用' ? '仍需优化' : scoreBand.label === '表现良好' ? '可进入发布前复核' : '建议结合实际素材复核'}</span>
+                    {SCORE_BANDS.map((scoreBand, index) => (
+                      <span key={scoreBand.label}>{t.scoreBands[index]}</span>
                     ))}
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {[
-                    { label: '平台适配', key: 'platformFit' as const, subtitle: 'Platform Fit' },
-                    { label: '受众适配', key: 'audienceFit' as const, subtitle: 'Audience Fit' },
-                    { label: '创作者目标', key: 'creatorGoalFit' as const, subtitle: 'Creator Goal' },
-                    { label: '综合有效性', key: 'overallEffectiveness' as const, subtitle: 'Overall' },
+                    { label: t.platformFit, key: 'platformFit' as const, subtitle: resultLanguage === 'zh' ? 'Platform Fit' : '平台适配' },
+                    { label: t.audienceFit, key: 'audienceFit' as const, subtitle: resultLanguage === 'zh' ? 'Audience Fit' : '受众适配' },
+                    { label: t.creatorGoalFit, key: 'creatorGoalFit' as const, subtitle: resultLanguage === 'zh' ? 'Creator Goal Fit' : '创作者目标' },
+                    { label: t.overall, key: 'overallEffectiveness' as const, subtitle: resultLanguage === 'zh' ? 'Overall' : '综合有效性' },
                   ].map(({ label, key, subtitle }) => {
                     const s = report.triFlowScores[key];
-                    const b = getScoreBand(s);
+                    const b = localizedScoreBand(s, resultLanguage);
                     return (
                       <div key={key} className={`rounded-xl border p-3.5 ${scoreBg(s)}`}>
                         <span className="block text-xs font-medium text-slate-500">{label} <span className="text-[10px] text-slate-400">{subtitle}</span></span>
@@ -488,21 +757,21 @@ export default function EvaluatePage() {
                 </div>
               </AccordionSection>
 
-              <AccordionSection letter="C" title="问题归因" subtitle="Badcase Diagnosis" iconClass="bg-red-100 text-red-700" open={openSection === 'C'} onToggle={() => toggleSection('C')}>
+              <AccordionSection letter="C" title={t.sectionC} subtitle={resultLanguage === 'zh' ? 'Badcase Diagnosis' : '问题归因'} iconClass="bg-red-100 text-red-700" open={openSection === 'C'} onToggle={() => toggleSection('C')}>
                 <div className="space-y-2.5">
                   {report.badcases.map((bc, i) => (
                     <div key={i} className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-600">{bc.badcaseLabel || bc.type}</span>
-                        <span className={`inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${layerBadge(bc.layer)}`}>问题层级：{bc.layer === 'platform' ? '平台层' : bc.layer === 'audience' ? '受众层' : '创作者层'}</span>
-                        <span className="text-[10px] text-slate-400">问题类型：{bc.type}</span>
+                        <span className={`inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${layerBadge(bc.layer)}`}>{t.issueLayer}: {bc.layer === 'platform' ? t.platformLayer : bc.layer === 'audience' ? t.audienceLayer : t.creatorLayer}</span>
+                        <span className="text-[10px] text-slate-400">{t.issueType}: {bc.type}</span>
                       </div>
                       <div className="mb-2 rounded-lg border border-slate-200 bg-slate-100/80 px-3 py-2">
-                        <span className="text-[10px] font-medium text-slate-500">原文证据</span>
+                        <span className="text-[10px] font-medium text-slate-500">{t.evidence}</span>
                         <p className="mt-0.5 text-xs text-slate-600">{bc.evidence}</p>
                       </div>
                       <div className="rounded-lg border border-sky-100 bg-sky-50/80 px-3 py-2">
-                        <span className="text-[10px] font-medium text-sky-600">修复建议</span>
+                        <span className="text-[10px] font-medium text-sky-600">{t.fix}</span>
                         <p className="mt-0.5 text-xs text-emerald-700">{bc.fix}</p>
                       </div>
                     </div>
@@ -510,28 +779,28 @@ export default function EvaluatePage() {
                 </div>
               </AccordionSection>
 
-              <AccordionSection letter="D" title="Prompt v2 优化建议" subtitle="Prompt Optimizer" iconClass="bg-emerald-100 text-emerald-700" open={openSection === 'D'} onToggle={() => toggleSection('D')}>
+              <AccordionSection letter="D" title={t.sectionD} subtitle={resultLanguage === 'zh' ? 'Prompt Optimizer' : '提示词优化'} iconClass="bg-emerald-100 text-emerald-700" open={openSection === 'D'} onToggle={() => toggleSection('D')}>
                 <div className="relative">
                   <pre className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 pr-24 text-xs leading-relaxed text-slate-700 font-mono">{report.promptV2.optimizedPrompt}</pre>
                   <button type="button" onClick={() => handleCopy(report.promptV2.optimizedPrompt)}
                     className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-500 transition-colors hover:bg-slate-50">
-                    {copied ? '已复制' : '复制 Prompt'}
+                    {copied ? t.copied : t.copyPrompt}
                   </button>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <div><span className={sectionLabel}>变更原因 <span className="text-slate-300">Change Reasons</span></span><ul className="mt-2 space-y-1.5">{report.promptV2.changeReasons.map((r,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400"/>{r}</li>)}</ul></div>
-                  <div><span className={sectionLabel}>预期改进 <span className="text-slate-300">Expected Improvements</span></span><ul className="mt-2 space-y-1.5">{report.promptV2.expectedImprovements.map((imp,i)=><li key={i} className="flex items-start gap-2 text-xs text-emerald-700"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400"/>{imp}</li>)}</ul></div>
+                  <div><span className={sectionLabel}>{t.changeReasons}</span><ul className="mt-2 space-y-1.5">{report.promptV2.changeReasons.map((r,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400"/>{r}</li>)}</ul></div>
+                  <div><span className={sectionLabel}>{t.expectedImprovements}</span><ul className="mt-2 space-y-1.5">{report.promptV2.expectedImprovements.map((imp,i)=><li key={i} className="flex items-start gap-2 text-xs text-emerald-700"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400"/>{imp}</li>)}</ul></div>
                 </div>
               </AccordionSection>
 
-              <AccordionSection letter="E" title="多评审一致性" subtitle="Multi-Judge Evaluation" iconClass={hasMultiJudge ? (report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'E'} onToggle={() => toggleSection('E')}>
+              <AccordionSection letter="E" title={t.sectionE} subtitle={resultLanguage === 'zh' ? 'Multi-Judge Evaluation' : '多评审一致性'} iconClass={hasMultiJudge ? (report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'E'} onToggle={() => toggleSection('E')}>
                 {hasMultiJudge ? (
                   <>
                   <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{report.multiJudge!.agreement.level === 'high' ? '高一致' : report.multiJudge!.agreement.level === 'medium' ? '中等一致' : '低一致'}</span>
-                      <span className="text-[10px] text-slate-400">分差: {report.multiJudge!.agreement.scoreSpread}</span>
-                      {report.multiJudge!.agreement.reviewRequired && <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">建议人工复核</span>}
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{report.multiJudge!.agreement.level === 'high' ? t.highAgreement : report.multiJudge!.agreement.level === 'medium' ? t.mediumAgreement : t.lowAgreement}</span>
+                      <span className="text-[10px] text-slate-400">{t.spread}: {report.multiJudge!.agreement.scoreSpread}</span>
+                      {report.multiJudge!.agreement.reviewRequired && <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">{t.reviewRequired}</span>}
                     </div>
                     <p className="text-xs text-slate-600">{report.multiJudge!.agreement.summary}</p>
                   </div>
@@ -542,58 +811,58 @@ export default function EvaluatePage() {
                           <span className="text-[10px] font-semibold text-slate-500">{judge.name}</span>
                           <div className="flex items-center gap-1.5">
                             <span className={`text-sm font-bold ${scoreColor(judge.score)}`}>{judge.score}/100</span>
-                            <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${judge.verdict === 'pass' ? 'bg-emerald-100 text-emerald-700' : judge.verdict === 'high_risk' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>{judge.verdict === 'pass' ? '通过' : judge.verdict === 'high_risk' ? '高风险' : '需修改'}</span>
+                            <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${judge.verdict === 'pass' ? 'bg-emerald-100 text-emerald-700' : judge.verdict === 'high_risk' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>{judge.verdict === 'pass' ? t.pass : judge.verdict === 'high_risk' ? t.highRisk : t.needsRevision}</span>
                           </div>
                         </div>
-                        <p className="mb-1 text-[10px] text-slate-500"><span className="font-medium text-slate-400">关键担忧: </span>{judge.keyConcern}</p>
-                        <p className="mb-1 text-[10px] text-slate-400"><span className="font-medium text-slate-400">证据: </span>{judge.evidence}</p>
-                        <p className="text-[10px] text-sky-600"><span className="font-medium text-sky-500">建议: </span>{judge.recommendation}</p>
+                        <p className="mb-1 text-[10px] text-slate-500"><span className="font-medium text-slate-400">{t.keyConcern}: </span>{judge.keyConcern}</p>
+                        <p className="mb-1 text-[10px] text-slate-400"><span className="font-medium text-slate-400">{t.evidence}: </span>{judge.evidence}</p>
+                        <p className="text-[10px] text-sky-600"><span className="font-medium text-sky-500">{t.recommendation}: </span>{judge.recommendation}</p>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-3 text-[10px] leading-relaxed text-slate-400">多评审机制用于辅助识别评测分歧和复核优先级，不代表真实平台分发结果、法律意见或商业转化预测。</p>
+                  <p className="mt-3 text-[10px] leading-relaxed text-slate-400">{t.multiJudgeDisclaimer}</p>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-500">当前评测结果未返回多评审数据，旧结果仍可正常查看其他模块。</p>
+                  <p className="text-xs text-slate-500">{t.multiJudgeMissing}</p>
                 )}
               </AccordionSection>
 
-              <AccordionSection letter="F" title="评测置信度" subtitle="Confidence" iconClass={hasConfidence ? (report.confidence!.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.confidence!.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'F'} onToggle={() => toggleSection('F')}>
+              <AccordionSection letter="F" title={t.sectionF} subtitle={resultLanguage === 'zh' ? 'Confidence' : '评测置信度'} iconClass={hasConfidence ? (report.confidence!.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.confidence!.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'F'} onToggle={() => toggleSection('F')}>
                 {hasConfidence ? (
                   <>
                   <div className="mb-3 flex items-center gap-3">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${report.confidence!.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.confidence!.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{report.confidence!.level === 'high' ? '高置信' : report.confidence!.level === 'medium' ? '中置信' : '低置信'}</span>
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${report.confidence!.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.confidence!.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{report.confidence!.level === 'high' ? t.highConfidence : report.confidence!.level === 'medium' ? t.mediumConfidence : t.lowConfidence}</span>
                     <span className="text-sm font-bold text-slate-700">{report.confidence!.score}/100</span>
                   </div>
                   <ul className="space-y-1.5">{report.confidence!.reasons.map((r,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-slate-400"/>{r}</li>)}</ul>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-500">当前评测结果未返回置信度数据。</p>
+                  <p className="text-xs text-slate-500">{t.confidenceMissing}</p>
                 )}
               </AccordionSection>
 
-              <AccordionSection letter="G" title="风险分层" subtitle="Risk Assessment" iconClass={hasRisk ? (report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-700' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'G'} onToggle={() => toggleSection('G')}>
+              <AccordionSection letter="G" title={t.sectionG} subtitle={resultLanguage === 'zh' ? 'Risk Assessment' : '风险分层'} iconClass={hasRisk ? (report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-700' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'G'} onToggle={() => toggleSection('G')}>
                 {hasRisk ? (
                   <>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-600' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{report.riskAssessment!.riskLevel === 'high' ? '高风险' : report.riskAssessment!.riskLevel === 'medium' ? '中风险' : '低风险'}</span>
-                    {report.riskAssessment!.reviewRequired && <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">建议人工复核</span>}
-                    {(report.riskAssessment!.riskTypes ?? []).map((rt) => (
-                      <span key={rt} className="inline-flex rounded border border-rose-100 bg-rose-50/50 px-1.5 py-0.5 text-[10px] text-rose-600">{riskLabel(rt)}</span>
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-600' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{report.riskAssessment!.riskLevel === 'high' ? t.highRisk : report.riskAssessment!.riskLevel === 'medium' ? t.mediumRisk : t.lowRisk}</span>
+                    {report.riskAssessment!.reviewRequired && <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">{t.reviewRequired}</span>}
+                    {(report.riskAssessment!.riskTypes ?? []).map((rt, index) => (
+                      <span key={rt} className="inline-flex rounded border border-rose-100 bg-rose-50/50 px-1.5 py-0.5 text-[10px] text-rose-600">{riskLabel(rt, resultLanguage, result.localized?.[resultLanguage]?.riskAssessment?.riskTypeLabels, index)}</span>
                     ))}
                   </div>
                   <ul className="mb-3 space-y-1.5">{report.riskAssessment!.reasons.map((r,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-slate-400"/>{r}</li>)}</ul>
-                  <p className="text-[10px] leading-relaxed text-slate-400">风险分层仅用于内容优化与人工复核参考，不代表法律意见、平台审核结果或真实转化预测。</p>
+                  <p className="text-[10px] leading-relaxed text-slate-400">{t.riskDisclaimer}</p>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-500">当前评测结果未返回风险分层数据。</p>
+                  <p className="text-xs text-slate-500">{t.riskMissing}</p>
                 )}
               </AccordionSection>
 
-              <AccordionSection letter="H" title="保存与校准" subtitle="Actions & Calibration" iconClass="bg-sky-100 text-sky-700" open={openSection === 'H'} onToggle={() => toggleSection('H')}>
+              <AccordionSection letter="H" title={t.sectionH} subtitle={resultLanguage === 'zh' ? 'Actions & Calibration' : '保存与校准'} iconClass="bg-sky-100 text-sky-700" open={openSection === 'H'} onToggle={() => toggleSection('H')}>
                 <div className="space-y-4">
                   <div>
-                    <span className={sectionLabel}>保存与沉淀 <span className="text-slate-300">Actions</span></span>
+                    <span className={sectionLabel}>{t.actions}</span>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <SaveSopButton template={{ source: 'evaluate', name: `${platform}｜${contentGoal}｜${targetAudience || '通用受众'} SOP`, platform: platform === '小红书' ? 'xiaohongshu' : 'douyin', contentGoal, targetAudience, productTopic: productTopic || undefined, structure: platform === '小红书' ? XHS_DEFAULT_STRUCTURE : DY_DEFAULT_STRUCTURE, promptTemplate: report.promptV2.optimizedPrompt, commonBadcases: report.badcases.map((bc) => bc.badcaseLabel || bc.type), rubricFocus: platform === '小红书' ? XHS_DEFAULT_RUBRIC : DY_DEFAULT_RUBRIC }} />
                       <AddToDatasetButton source="evaluate" platform={platform === '小红书' ? 'xiaohongshu' : 'douyin'} contentGoal={contentGoal} productTopic={productTopic || undefined} targetAudience={targetAudience || undefined} content={aiContent} prompt={originalPrompt || undefined} aiScores={{ platformFit: report.triFlowScores.platformFit, audienceFit: report.triFlowScores.audienceFit, creatorGoalFit: report.triFlowScores.creatorGoalFit, overallEffectiveness: report.triFlowScores.overallEffectiveness }} aiBadcaseLabels={report.badcases.map((bc) => bc.badcaseLabel || bc.type)} confidenceLevel={report.confidence?.level} riskLevel={report.riskAssessment?.riskLevel} riskTypes={report.riskAssessment?.riskTypes} judgeAgreementLevel={report.multiJudge?.agreement?.level} />
@@ -601,7 +870,7 @@ export default function EvaluatePage() {
                     </div>
                   </div>
                   <div>
-                    <span className={sectionLabel}>人工校准 <span className="text-slate-300">Human Calibration</span></span>
+                    <span className={sectionLabel}>{t.calibration}</span>
                     <div className="mt-2">
                       <CalibrationPanel source="evaluate" platform={platform === '小红书' ? 'xiaohongshu' : 'douyin'} productTopic={productTopic || undefined} targetAudience={targetAudience || undefined} buttons={['accurate','score_too_high','score_too_low','badcase_wrong','prompt_useful','prompt_not_useful']} />
                     </div>
