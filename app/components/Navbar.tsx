@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import AuthStatus from './AuthStatus';
 
 const NAV_LINKS = [
   { href: '/evaluate', label: '内容评测' },
@@ -19,7 +20,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-lg">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
           className="flex flex-shrink-0 items-center gap-2.5 font-semibold text-slate-900"
@@ -30,7 +31,7 @@ export default function Navbar() {
           <span className="text-sm tracking-tight">ContentFlow</span>
         </Link>
 
-        <div className="flex items-center gap-1 overflow-x-auto">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {NAV_LINKS.map(({ href, label }) => {
             const isActive = pathname === href;
             return (
@@ -48,6 +49,8 @@ export default function Navbar() {
             );
           })}
         </div>
+
+        <AuthStatus />
       </div>
     </nav>
   );

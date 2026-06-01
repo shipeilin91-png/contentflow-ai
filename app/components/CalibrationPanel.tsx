@@ -10,6 +10,7 @@ import {
   saveCalibrationFeedback,
   generateCalibrationId,
 } from '@/app/utils/calibration';
+import { saveCalibrationToCloud } from '@/app/utils/cloudSync';
 
 interface Props {
   source: CalibrationSource;
@@ -30,7 +31,7 @@ export default function CalibrationPanel({
   const [note, setNote] = useState('');
 
   const handleFeedback = (feedbackType: CalibrationFeedbackType) => {
-    saveCalibrationFeedback({
+    const feedback = {
       id: generateCalibrationId(),
       createdAt: new Date().toISOString(),
       source,
@@ -39,7 +40,9 @@ export default function CalibrationPanel({
       targetAudience,
       feedbackType,
       note: note.trim() || undefined,
-    });
+    };
+    saveCalibrationFeedback(feedback);
+    void saveCalibrationToCloud(feedback);
     setSubmitted(true);
   };
 

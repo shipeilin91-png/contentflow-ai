@@ -7,6 +7,8 @@ import CalibrationPanel from '../components/CalibrationPanel';
 import SaveSopButton from '../components/SaveSopButton';
 import AddToDatasetButton from '../components/AddToDatasetButton';
 import SavePromptButton from '../components/SavePromptButton';
+import CloudSyncNotice from '../components/CloudSyncNotice';
+import { saveEvaluationToCloud } from '../utils/cloudSync';
 import { SCORE_BANDS, getScoreBand, scoreColor, scoreBg } from '../data/scoreScale';
 import { RISK_LABEL_MAP } from '../data/riskTaxonomy';
 import {
@@ -467,7 +469,7 @@ export default function EvaluatePage() {
     if (result && !loading && !hasSavedRef.current) {
       hasSavedRef.current = true;
       const apiPlatform = platform === '小红书' ? 'xiaohongshu' : 'douyin';
-      addHistoryItem({
+      const historyItem = {
         id: generateId(), createdAt: new Date().toISOString(), source: 'evaluate',
         platform: apiPlatform, contentGoal, productTopic, targetAudience,
         overallEffectiveness: result.triFlowScores.overallEffectiveness,
@@ -481,9 +483,30 @@ export default function EvaluatePage() {
         reviewRequired: result.riskAssessment?.reviewRequired,
         judgeAgreementLevel: result.multiJudge?.agreement?.level,
         judgeReviewRequired: result.multiJudge?.agreement?.reviewRequired,
+      } as const;
+      addHistoryItem(historyItem);
+      void saveEvaluationToCloud({
+        ...historyItem,
+        usedFallback: isFallback,
+        rawResult: result,
+        originalPrompt: originalPrompt || undefined,
+        aiContent: aiContent || undefined,
+        pgcReference: pgcReference || undefined,
+        badcases: result.badcases,
       });
     }
-  }, [result, loading, platform, contentGoal, productTopic, targetAudience]);
+  }, [
+    result,
+    loading,
+    platform,
+    contentGoal,
+    productTopic,
+    targetAudience,
+    isFallback,
+    originalPrompt,
+    aiContent,
+    pgcReference,
+  ]);
 
   const handleRun = async () => {
     hasSavedRef.current = false;
@@ -629,6 +652,10 @@ export default function EvaluatePage() {
 
         {/* ── RIGHT: Results ─────────────────────────────────── */}
         <div>
+          <div className="mb-4">
+            <CloudSyncNotice />
+          </div>
+
           {/* Empty state */}
           {!result && !loading && (
             <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-20">

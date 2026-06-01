@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { PromptVersionItem } from '@/app/types/promptRegistry';
 import { savePromptVersion, generatePromptVersionId } from '@/app/utils/promptRegistryStorage';
+import { savePromptVersionToCloud } from '@/app/utils/cloudSync';
 
 interface Props {
   item: Omit<PromptVersionItem, 'id' | 'createdAt'>;
@@ -13,11 +14,13 @@ export default function SavePromptButton({ item, label }: Props) {
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    savePromptVersion({
+    const promptVersion = {
       ...item,
       id: generatePromptVersionId(),
       createdAt: new Date().toISOString(),
-    });
+    };
+    savePromptVersion(promptVersion);
+    void savePromptVersionToCloud(promptVersion);
     setSaved(true);
   };
 

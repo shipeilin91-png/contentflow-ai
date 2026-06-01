@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type { UserSopTemplate, SopSource } from '@/app/types/sop';
+import type { UserSopTemplate } from '@/app/types/sop';
 import { saveUserSopTemplate, generateSopId } from '@/app/utils/sopStorage';
+import { saveSopTemplateToCloud } from '@/app/utils/cloudSync';
 
 interface Props {
   template: Omit<UserSopTemplate, 'id' | 'createdAt'>;
@@ -11,19 +12,22 @@ interface Props {
 
 export function buildAndSaveSop(
   template: Omit<UserSopTemplate, 'id' | 'createdAt'>
-): void {
-  saveUserSopTemplate({
+): UserSopTemplate {
+  const savedTemplate = {
     ...template,
     id: generateSopId(),
     createdAt: new Date().toISOString(),
-  });
+  };
+  saveUserSopTemplate(savedTemplate);
+  return savedTemplate;
 }
 
 export default function SaveSopButton({ template, label }: Props) {
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    buildAndSaveSop(template);
+    const savedTemplate = buildAndSaveSop(template);
+    void saveSopTemplateToCloud(savedTemplate);
     setSaved(true);
   };
 
