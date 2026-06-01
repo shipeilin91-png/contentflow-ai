@@ -11,12 +11,11 @@ import { ADMIN_EMAILS } from '@/app/data/adminConfig';
 
 export default function AuthStatus() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => isSupabaseConfigured());
   const configured = isSupabaseConfigured();
 
   useEffect(() => {
     if (!configured) {
-      setLoading(false);
       return;
     }
 

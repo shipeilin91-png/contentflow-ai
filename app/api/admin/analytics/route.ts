@@ -1,9 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
-import { ADMIN_EMAILS } from '@/app/data/adminConfig';
 import {
   createSupabaseAdminClient,
   isSupabaseAdminConfigured,
 } from '@/app/lib/supabase/admin';
+import { verifyAdminRequest } from '../adminAuth';
 
 type TableName =
   | 'evaluation_events'
@@ -36,33 +35,6 @@ function average(rows: Row[], key: string): number | null {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
-async function verifyUserFromToken(token: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !anonKey) {
-    return { error: 'supabase_not_configured' as const };
-  }
-
-  const authClient = createClient(supabaseUrl, anonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await authClient.auth.getUser(token);
-
-  if (error || !user) {
-    return { error: 'not_authenticated' as const };
-  }
-
-  return { user };
-}
-
 async function fetchAllRows(table: TableName): Promise<{ rows: Row[]; failed: boolean }> {
   const adminClient = createSupabaseAdminClient();
   if (!adminClient) return { rows: [], failed: true };
@@ -91,33 +63,8 @@ async function fetchAllRows(table: TableName): Promise<{ rows: Row[]; failed: bo
 }
 
 export async function GET(request: Request) {
-  const authorization = request.headers.get('authorization') ?? '';
-  const token = authorization.startsWith('Bearer ')
-    ? authorization.slice('Bearer '.length).trim()
-    : '';
-
-  if (!token) {
-    return Response.json({ message: '请先登录管理员账号。' }, { status: 401 });
-  }
-
-  const authResult = await verifyUserFromToken(token);
-  if ('error' in authResult) {
-    const status = authResult.error === 'not_authenticated' ? 401 : 500;
-    return Response.json(
-      {
-        message:
-          authResult.error === 'not_authenticated'
-            ? '请先登录管理员账号。'
-            : 'Supabase 尚未配置，后台数据不可用。',
-      },
-      { status }
-    );
-  }
-
-  const email = authResult.user.email;
-  if (!email || !ADMIN_EMAILS.includes(email)) {
-    return Response.json({ message: '当前账号无后台访问权限。' }, { status: 403 });
-  }
+  const authResult = await verifyAdminRequest(request);
+  if (!authResult.ok) return authResult.response;
 
   if (!isSupabaseAdminConfigured()) {
     return Response.json(

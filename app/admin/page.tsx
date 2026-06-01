@@ -215,13 +215,17 @@ function StatusCard({
 }
 
 export default function AdminPage() {
-  const [status, setStatus] = useState<AdminStatus>('checking');
+  const [status, setStatus] = useState<AdminStatus>(() =>
+    isSupabaseConfigured() ? 'checking' : 'supabase_not_configured'
+  );
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoMessage, setDemoMessage] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const configured = isSupabaseConfigured();
 
   useEffect(() => {
     if (!configured) {
-      setStatus('supabase_not_configured');
       return;
     }
 
@@ -286,7 +290,69 @@ export default function AdminPage() {
     return () => {
       active = false;
     };
-  }, [configured]);
+  }, [configured, refreshKey]);
+
+  const callDemoTool = async (endpoint: '/api/admin/seed-demo' | '/api/admin/clear-demo') => {
+    const isSeed = endpoint.includes('seed');
+    const confirmed = window.confirm(
+      isSeed
+        ? '确认生成一组带 [DEMO] 标记的演示数据？'
+        : '确认清理当前管理员账号下带 [DEMO] 标记的演示数据？'
+    );
+    if (!confirmed) return;
+
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) {
+      setDemoMessage('Supabase 尚未配置，无法执行演示工具。');
+      return;
+    }
+
+    setDemoLoading(true);
+    setDemoMessage('');
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setDemoMessage('请先登录管理员账号。');
+        return;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        setDemoMessage('请先登录管理员账号。');
+        return;
+      }
+      if (response.status === 403) {
+        setDemoMessage('当前账号无后台访问权限。');
+        return;
+      }
+      if (!response.ok) {
+        setDemoMessage(payload.message || '演示工具执行失败，请稍后重试。');
+        return;
+      }
+
+      if (payload.skipped) {
+        setDemoMessage('演示数据已存在。');
+      } else {
+        setDemoMessage(isSeed ? '演示数据已生成。' : '演示数据已清理。');
+      }
+      setRefreshKey((current) => current + 1);
+    } catch {
+      setDemoMessage('演示工具执行失败，请稍后重试。');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   if (status === 'supabase_not_configured') {
     return (
@@ -382,6 +448,37 @@ export default function AdminPage() {
       )}
 
       <div className="space-y-6">
+        <SectionCard title="管理员演示工具 Admin Demo Tools" subtitle="Demo seed data for portfolio validation">
+          <div className="space-y-4">
+            <p className="text-xs leading-relaxed text-slate-500">
+              该功能仅用于作品集演示和本地验收，会生成带 [DEMO] 标记的样例数据，不代表真实用户行为。
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={demoLoading}
+                onClick={() => callDemoTool('/api/admin/seed-demo')}
+                className="inline-flex h-9 items-center rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {demoLoading ? '处理中...' : '生成演示数据'}
+              </button>
+              <button
+                type="button"
+                disabled={demoLoading}
+                onClick={() => callDemoTool('/api/admin/clear-demo')}
+                className="inline-flex h-9 items-center rounded-lg border border-red-200 bg-white px-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                清理演示数据
+              </button>
+            </div>
+            {demoMessage && (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                {demoMessage}
+              </p>
+            )}
+          </div>
+        </SectionCard>
+
         <section>
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-slate-900">总览指标 Overview</h2>
