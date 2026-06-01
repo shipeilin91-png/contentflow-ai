@@ -7,6 +7,7 @@ import {
   createSupabaseBrowserClient,
   isSupabaseConfigured,
 } from '@/app/lib/supabase/client';
+import { ADMIN_EMAILS } from '@/app/data/adminConfig';
 
 export default function AuthStatus() {
   const [user, setUser] = useState<User | null>(null);
@@ -68,6 +69,14 @@ export default function AuthStatus() {
 
   return (
     <div className="flex flex-shrink-0 items-center gap-2">
+      {user.email && ADMIN_EMAILS.includes(user.email) && (
+        <Link
+          href="/admin"
+          className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+        >
+          Admin
+        </Link>
+      )}
       <span className="hidden max-w-[160px] truncate text-xs font-medium text-slate-600 md:inline">
         {user.email}
       </span>
