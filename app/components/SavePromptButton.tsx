@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { PromptVersionItem } from '@/app/types/promptRegistry';
 import { savePromptVersion, generatePromptVersionId } from '@/app/utils/promptRegistryStorage';
 import { savePromptVersionToCloud } from '@/app/utils/cloudSync';
+import { trackUsageEvent } from '@/app/utils/usageTracking';
 
 interface Props {
   item: Omit<PromptVersionItem, 'id' | 'createdAt'>;
@@ -21,6 +22,18 @@ export default function SavePromptButton({ item, label }: Props) {
     };
     savePromptVersion(promptVersion);
     void savePromptVersionToCloud(promptVersion);
+    void trackUsageEvent({
+      eventName: 'save_prompt',
+      pagePath: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      source: promptVersion.source,
+      platform: promptVersion.platform,
+      contentGoal: promptVersion.contentGoal,
+      productTopic: promptVersion.productTopic,
+      metadata: {
+        versionLabel: promptVersion.versionLabel,
+        savedAsSop: promptVersion.savedAsSop,
+      },
+    });
     setSaved(true);
   };
 

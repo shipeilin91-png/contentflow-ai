@@ -10,6 +10,7 @@ import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
 import SaveSopButton from '../components/SaveSopButton';
 import SavePromptButton from '../components/SavePromptButton';
+import { trackUsageEvent } from '../utils/usageTracking';
 import {
   XHS_DEFAULT_STRUCTURE,
   DY_DEFAULT_STRUCTURE,
@@ -182,6 +183,20 @@ export default function ABTestPage() {
         reviewRequired: abResult.resultB.riskAssessment?.reviewRequired,
         judgeAgreementLevel: abResult.resultB.multiJudge?.agreement?.level,
         judgeReviewRequired: abResult.resultB.multiJudge?.agreement?.reviewRequired,
+      });
+      void trackUsageEvent({
+        eventName: 'ab_test_run',
+        pagePath: '/ab-test',
+        source: 'ab-test',
+        platform: apiPlatform,
+        contentGoal,
+        productTopic,
+        metadata: {
+          winner: abResult.winner,
+          improvementDelta:
+            abResult.resultB.triFlowScores.overallEffectiveness -
+            abResult.resultA.triFlowScores.overallEffectiveness,
+        },
       });
     }
   }, [abResult, loading, platform, contentGoal, productTopic, targetAudience]);

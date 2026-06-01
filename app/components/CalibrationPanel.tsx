@@ -11,6 +11,7 @@ import {
   generateCalibrationId,
 } from '@/app/utils/calibration';
 import { saveCalibrationToCloud } from '@/app/utils/cloudSync';
+import { trackUsageEvent } from '@/app/utils/usageTracking';
 
 interface Props {
   source: CalibrationSource;
@@ -43,6 +44,14 @@ export default function CalibrationPanel({
     };
     saveCalibrationFeedback(feedback);
     void saveCalibrationToCloud(feedback);
+    void trackUsageEvent({
+      eventName: 'calibration_submit',
+      pagePath: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      source,
+      platform,
+      productTopic,
+      metadata: { feedbackType },
+    });
     setSubmitted(true);
   };
 

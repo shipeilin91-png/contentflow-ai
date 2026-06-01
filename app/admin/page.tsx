@@ -57,6 +57,23 @@ interface AdminAnalytics {
     confidenceLevel: string | null;
     usedFallback: boolean | null;
   }[];
+  usageAnalytics: {
+    totalUsageEvents: number;
+    eventCounts: {
+      eventName: string;
+      count: number;
+    }[];
+    recentUsageEvents: {
+      id: string;
+      createdAt: string;
+      eventName: string;
+      pagePath: string | null;
+      platform: string | null;
+      source: string | null;
+      contentGoal: string | null;
+      productTopic: string | null;
+    }[];
+  };
   dataScope: 'all_users';
   warnings?: string[];
 }
@@ -79,6 +96,16 @@ const CALIBRATION_ITEMS = [
   { key: 'promptUseful', label: 'Prompt 建议有用' },
   { key: 'promptNotUseful', label: 'Prompt 建议无用' },
 ] as const;
+
+const USAGE_EVENT_LABELS: Record<string, string> = {
+  evaluate_run: '内容评测',
+  ab_test_run: 'A/B 测试',
+  batch_run: '批量评测',
+  compare_run: 'PGC/AIGC 对比',
+  save_prompt: '保存 Prompt',
+  save_sop: '保存 SOP',
+  calibration_submit: '人工校准',
+};
 
 function formatDate(value: string): string {
   if (!value) return '-';
@@ -473,6 +500,84 @@ export default function AdminPage() {
             <MetricCard label="已沉淀为 SOP 的 Prompt 数" sublabel="Saved as SOP" value={analytics.promptOps.savedAsSopPrompts} />
             <MetricCard label="SOP 总数" sublabel="SOP Templates" value={analytics.promptOps.sopTemplates} />
           </div>
+        </SectionCard>
+
+        <SectionCard title="用户行为分析 Usage Analytics" subtitle="Core product usage paths">
+          <p className="mb-4 text-xs leading-relaxed text-slate-500">
+            记录登录用户在核心功能中的使用行为，用于观察真实产品路径，不用于额度限制或商业结算。
+          </p>
+          {analytics.usageAnalytics.totalUsageEvents === 0 ? (
+            <EmptyState text="暂无用户行为数据。登录后完成评测、保存 Prompt/SOP 或提交人工校准后，这里会出现记录。" />
+          ) : (
+            <div className="space-y-5">
+              <div className="grid gap-3 md:grid-cols-[220px_1fr]">
+                <MetricCard
+                  label="总行为事件数"
+                  sublabel="Total Usage Events"
+                  value={analytics.usageAnalytics.totalUsageEvents}
+                />
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700">功能使用次数 Top Events</span>
+                    <span className="text-[10px] text-slate-400">Top 10</span>
+                  </div>
+                  <div className="space-y-2">
+                    {analytics.usageAnalytics.eventCounts.map((item) => (
+                      <div key={item.eventName}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-600">
+                            {USAGE_EVENT_LABELS[item.eventName] || item.eventName}
+                            <span className="ml-1 text-[10px] font-normal text-slate-400">{item.eventName}</span>
+                          </span>
+                          <span className="text-slate-400">{item.count}</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-white">
+                          <div
+                            className="h-full rounded-full bg-emerald-500"
+                            style={{
+                              width: `${analytics.usageAnalytics.totalUsageEvents > 0
+                                ? (item.count / analytics.usageAnalytics.totalUsageEvents) * 100
+                                : 0}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="border-b border-slate-100 text-slate-400">
+                    <tr>
+                      <th className="whitespace-nowrap px-3 py-2 font-medium">时间</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-medium">eventName</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-medium">pagePath</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-medium">platform</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-medium">contentGoal</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-medium">productTopic</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-600">
+                    {analytics.usageAnalytics.recentUsageEvents.map((row) => (
+                      <tr key={row.id}>
+                        <td className="whitespace-nowrap px-3 py-2">{formatDate(row.createdAt)}</td>
+                        <td className="whitespace-nowrap px-3 py-2">
+                          {USAGE_EVENT_LABELS[row.eventName] || row.eventName}
+                          <span className="ml-1 text-[10px] text-slate-400">{row.eventName}</span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2">{row.pagePath || '-'}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{platformLabel(row.platform)}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{row.contentGoal || '-'}</td>
+                        <td className="max-w-[180px] truncate px-3 py-2">{row.productTopic || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard title="最近评测记录 Recent Evaluations" subtitle="Latest 10 evaluation_events">

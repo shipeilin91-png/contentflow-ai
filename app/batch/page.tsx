@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { type EvaluationResult, getMockResult } from '../data/mockResults';
 import { addHistoryItem, generateId } from '../utils/history';
 import AddToDatasetButton from '../components/AddToDatasetButton';
+import { trackUsageEvent } from '../utils/usageTracking';
 
 const PLATFORMS = ['小红书', '抖音'] as const;
 const GOALS = ['种草', '转化', '涨粉', '搜索沉淀'] as const;
@@ -300,6 +301,21 @@ export default function BatchPage() {
           ? 'high'
           : 'medium',
       judgeReviewRequired: results.some((r) => r.result?.multiJudge?.agreement?.reviewRequired),
+    });
+
+    void trackUsageEvent({
+      eventName: 'batch_run',
+      pagePath: '/batch',
+      source: 'batch',
+      platform: apiPlatform,
+      contentGoal,
+      productTopic,
+      metadata: {
+        totalCount: batchSummary.totalCount,
+        averageOverall: batchSummary.averageOverall,
+        highRiskCount: batchSummary.highRiskCount,
+        reviewRequiredCount: batchSummary.reviewRequiredCount,
+      },
     });
 
     setLoading(false);

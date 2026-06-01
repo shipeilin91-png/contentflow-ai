@@ -10,7 +10,8 @@ type TableName =
   | 'badcase_events'
   | 'calibration_feedback'
   | 'prompt_versions'
-  | 'sop_templates';
+  | 'sop_templates'
+  | 'usage_events';
 
 type Row = Record<string, unknown>;
 
@@ -126,13 +127,21 @@ export async function GET(request: Request) {
   }
 
   const warnings: string[] = [];
-  const [evaluationsResult, badcasesResult, calibrationsResult, promptsResult, sopsResult] =
+  const [
+    evaluationsResult,
+    badcasesResult,
+    calibrationsResult,
+    promptsResult,
+    sopsResult,
+    usageResult,
+  ] =
     await Promise.all([
       fetchAllRows('evaluation_events'),
       fetchAllRows('badcase_events'),
       fetchAllRows('calibration_feedback'),
       fetchAllRows('prompt_versions'),
       fetchAllRows('sop_templates'),
+      fetchAllRows('usage_events'),
     ]);
 
   const tableResults: Array<{ name: TableName; failed: boolean }> = [
@@ -141,6 +150,7 @@ export async function GET(request: Request) {
     { name: 'calibration_feedback', failed: calibrationsResult.failed },
     { name: 'prompt_versions', failed: promptsResult.failed },
     { name: 'sop_templates', failed: sopsResult.failed },
+    { name: 'usage_events', failed: usageResult.failed },
   ];
   tableResults.forEach((result) => {
     if (result.failed) warnings.push(`${result.name} 查询失败，已跳过该模块数据。`);
@@ -151,6 +161,7 @@ export async function GET(request: Request) {
   const calibrations = calibrationsResult.rows;
   const prompts = promptsResult.rows;
   const sops = sopsResult.rows;
+  const usageEvents = usageResult.rows;
 
   const badcaseCounts = new Map<string, number>();
   badcases.forEach((row) => {
@@ -169,6 +180,12 @@ export async function GET(request: Request) {
     promptUseful + promptNotUseful > 0
       ? Math.round((promptUseful / (promptUseful + promptNotUseful)) * 100)
       : null;
+
+  const usageCounts = new Map<string, number>();
+  usageEvents.forEach((row) => {
+    const eventName = asString(row.event_name) || 'unknown_event';
+    usageCounts.set(eventName, (usageCounts.get(eventName) ?? 0) + 1);
+  });
 
   return Response.json({
     overview: {
@@ -219,6 +236,23 @@ export async function GET(request: Request) {
       confidenceLevel: asString(row.confidence_level) || null,
       usedFallback: typeof row.used_fallback === 'boolean' ? row.used_fallback : null,
     })),
+    usageAnalytics: {
+      totalUsageEvents: usageEvents.length,
+      eventCounts: Array.from(usageCounts.entries())
+        .map(([eventName, count]) => ({ eventName, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10),
+      recentUsageEvents: usageEvents.slice(0, 10).map((row, index) => ({
+        id: asString(row.id) || String(index),
+        createdAt: asString(row.created_at),
+        eventName: asString(row.event_name),
+        pagePath: asString(row.page_path) || null,
+        platform: asString(row.platform) || null,
+        source: asString(row.source) || null,
+        contentGoal: asString(row.content_goal) || null,
+        productTopic: asString(row.product_topic) || null,
+      })),
+    },
     dataScope: 'all_users',
     warnings: warnings.length > 0 ? warnings : undefined,
   });

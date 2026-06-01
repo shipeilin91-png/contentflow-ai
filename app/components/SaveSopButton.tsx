@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { UserSopTemplate } from '@/app/types/sop';
 import { saveUserSopTemplate, generateSopId } from '@/app/utils/sopStorage';
 import { saveSopTemplateToCloud } from '@/app/utils/cloudSync';
+import { trackUsageEvent } from '@/app/utils/usageTracking';
 
 interface Props {
   template: Omit<UserSopTemplate, 'id' | 'createdAt'>;
@@ -28,6 +29,14 @@ export default function SaveSopButton({ template, label }: Props) {
   const handleSave = () => {
     const savedTemplate = buildAndSaveSop(template);
     void saveSopTemplateToCloud(savedTemplate);
+    void trackUsageEvent({
+      eventName: 'save_sop',
+      pagePath: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      source: savedTemplate.source,
+      platform: savedTemplate.platform,
+      contentGoal: savedTemplate.contentGoal,
+      productTopic: savedTemplate.productTopic,
+    });
     setSaved(true);
   };
 

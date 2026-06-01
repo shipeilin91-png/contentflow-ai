@@ -9,6 +9,7 @@ import AddToDatasetButton from '../components/AddToDatasetButton';
 import SavePromptButton from '../components/SavePromptButton';
 import CloudSyncNotice from '../components/CloudSyncNotice';
 import { saveEvaluationToCloud } from '../utils/cloudSync';
+import { trackUsageEvent } from '../utils/usageTracking';
 import { SCORE_BANDS, getScoreBand, scoreColor, scoreBg } from '../data/scoreScale';
 import { RISK_LABEL_MAP } from '../data/riskTaxonomy';
 import {
@@ -493,6 +494,20 @@ export default function EvaluatePage() {
         aiContent: aiContent || undefined,
         pgcReference: pgcReference || undefined,
         badcases: result.badcases,
+      });
+      void trackUsageEvent({
+        eventName: 'evaluate_run',
+        pagePath: '/evaluate',
+        source: 'evaluate',
+        platform: apiPlatform,
+        contentGoal,
+        productTopic,
+        metadata: {
+          usedFallback: isFallback,
+          overallScore: result.triFlowScores.overallEffectiveness,
+          riskLevel: result.riskAssessment?.riskLevel,
+          confidenceLevel: result.confidence?.level,
+        },
       });
     }
   }, [

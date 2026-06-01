@@ -5,6 +5,7 @@ import { addHistoryItem, generateId } from '../utils/history';
 import CalibrationPanel from '../components/CalibrationPanel';
 import SaveSopButton from '../components/SaveSopButton';
 import SavePromptButton from '../components/SavePromptButton';
+import { trackUsageEvent } from '../utils/usageTracking';
 
 // ── Constants ───────────────────────────────────────────────────────
 const PLATFORMS = ['小红书', '抖音'] as const;
@@ -70,6 +71,17 @@ export default function ComparePage() {
         creatorGoalFit: 0,
         badcaseCount: result.aigcWeaknesses.length,
         badcaseTypes: result.aigcWeaknesses.slice(0, 5),
+      });
+      void trackUsageEvent({
+        eventName: 'compare_run',
+        pagePath: '/compare',
+        source: 'compare',
+        platform: apiPlatform,
+        contentGoal,
+        productTopic,
+        metadata: {
+          canBeSavedAsSop: result.sopPotential?.canBeSavedAsSop,
+        },
       });
     }
   }, [result, loading, platform, contentGoal, productTopic, targetAudience]);
