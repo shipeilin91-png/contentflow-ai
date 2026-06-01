@@ -107,6 +107,34 @@ const USAGE_EVENT_LABELS: Record<string, string> = {
   calibration_submit: '人工校准',
 };
 
+const DATA_LOOP_STEPS = [
+  {
+    title: '用户运行评测',
+    subtitle: 'Evaluation Run',
+    description: '记录平台、目标、内容主题和评分结果。',
+  },
+  {
+    title: '系统归因 Badcase',
+    subtitle: 'Badcase Diagnosis',
+    description: '统计搜索意图缺失、Hook 弱、硬广感强等高频问题。',
+  },
+  {
+    title: '用户人工校准',
+    subtitle: 'Human Calibration',
+    description: '记录评分偏高、归因不准、Prompt 建议是否有用。',
+  },
+  {
+    title: '沉淀 Prompt / SOP',
+    subtitle: 'PromptOps Assets',
+    description: '将有效 Prompt 和内容结构沉淀为可复用资产。',
+  },
+  {
+    title: '反哺 Rubric 优化',
+    subtitle: 'Rubric Iteration',
+    description: '用数据发现评测标准偏差，持续优化模型评审 Prompt 和平台 Rubric。',
+  },
+];
+
 function formatDate(value: string): string {
   if (!value) return '-';
   const date = new Date(value);
@@ -427,11 +455,21 @@ export default function AdminPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          管理后台 Admin Dashboard
+          产品方数据后台 Admin Analytics
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          查看真实用户使用数据、AI 评测质量反馈与 Prompt/SOP 沉淀情况。
+          通过评测记录、用户行为、Badcase、人工校准与 Prompt/SOP 沉淀，观察 AIGC 内容质量评测系统的真实使用情况。
         </p>
+        <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-5 py-4 text-sm leading-relaxed text-indigo-900">
+          <p className="font-medium">
+            ContentFlow 的后台不是用于限制用户或计费，而是用于回答三个产品问题：
+          </p>
+          <ol className="mt-3 space-y-1 text-xs text-indigo-800">
+            <li>1. 用户是否真的在使用核心评测路径？</li>
+            <li>2. AI 评测结果在哪些地方经常需要人工校准？</li>
+            <li>3. 哪些 Badcase 和 Prompt 优化策略最值得沉淀为 SOP？</li>
+          </ol>
+        </div>
         <p className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs leading-relaxed text-emerald-700">
           当前后台通过 server-side service role API 聚合全量产品数据，前端仅传递当前登录 session token 用于管理员身份校验。
         </p>
@@ -451,7 +489,7 @@ export default function AdminPage() {
         <SectionCard title="管理员演示工具 Admin Demo Tools" subtitle="Demo seed data for portfolio validation">
           <div className="space-y-4">
             <p className="text-xs leading-relaxed text-slate-500">
-              该功能仅用于作品集演示和本地验收，会生成带 [DEMO] 标记的样例数据，不代表真实用户行为。
+              该功能仅用于作品集演示和本地验收，会生成带 [DEMO] 标记的样例数据，不代表真实用户行为，也不是伪装真实用户数据。
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -471,11 +509,27 @@ export default function AdminPage() {
                 清理演示数据
               </button>
             </div>
+            <p className="text-[11px] text-slate-400">数据会带有 [DEMO] 标记，可随时清理。</p>
             {demoMessage && (
               <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                 {demoMessage}
               </p>
             )}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="数据闭环 Data Loop" subtitle="Evaluate, calibrate, codify, and iterate">
+          <div className="grid gap-3 md:grid-cols-5">
+            {DATA_LOOP_STEPS.map((step, index) => (
+              <div key={step.title} className="relative rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white">
+                  {index + 1}
+                </span>
+                <h3 className="mt-3 text-sm font-semibold text-slate-900">{step.title}</h3>
+                <p className="mt-0.5 text-[11px] text-slate-400">{step.subtitle}</p>
+                <p className="mt-3 text-xs leading-relaxed text-slate-500">{step.description}</p>
+              </div>
+            ))}
           </div>
         </SectionCard>
 
@@ -496,7 +550,7 @@ export default function AdminPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <SectionCard title="平台分布 Platform Distribution" subtitle="evaluation_events by platform">
             {totalPlatform === 0 ? (
-              <EmptyState text="暂无平台分布数据。" />
+              <EmptyState text="暂无平台分布数据。完成一次评测后，这里会自动更新。" />
             ) : (
               <div className="space-y-3">
                 {[
@@ -522,7 +576,7 @@ export default function AdminPage() {
 
           <SectionCard title="平均评分 Average Scores" subtitle="TriFlow average score snapshot">
             {analytics.overview.totalEvaluations === 0 ? (
-              <EmptyState text="暂无评分数据。" />
+              <EmptyState text="暂无评分数据。完成一次评测后，这里会自动更新。" />
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
@@ -545,8 +599,11 @@ export default function AdminPage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <SectionCard title="高频 Badcase Top Badcases" subtitle="Top issue labels from badcase_events">
+            <p className="mb-4 text-xs leading-relaxed text-slate-500">
+              高频 Badcase 用于发现 AIGC 内容生成中最常见的质量短板。例如小红书常见问题可能是搜索意图缺失、真实体验不足；抖音常见问题可能是前三秒 Hook 弱、完播动机不足。
+            </p>
             {analytics.topBadcases.length === 0 ? (
-              <EmptyState text="暂无 Badcase 数据。" />
+              <EmptyState text="暂无 Badcase 数据。完成一次评测后，这里会自动更新。" />
             ) : (
               <div className="space-y-2">
                 {analytics.topBadcases.map((item, index) => (
@@ -560,13 +617,19 @@ export default function AdminPage() {
                     <span className="text-xs font-semibold text-slate-500">{item.count}</span>
                   </div>
                 ))}
+                <p className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">
+                  建议优先将高频 Badcase 纳入 Prompt Optimizer 和 SOP 模板。
+                </p>
               </div>
             )}
           </SectionCard>
 
           <SectionCard title="人工校准概览 Calibration Quality" subtitle="Human feedback quality signals">
+            <p className="mb-4 text-xs leading-relaxed text-slate-500">
+              人工校准用于衡量 LLM-as-a-Judge 的可信度。当评分偏高、评分偏低或问题归因不准确比例上升时，说明评测 Rubric 或 Judge Prompt 需要重新校准。
+            </p>
             {analytics.overview.totalCalibration === 0 ? (
-              <EmptyState text="暂无人工校准数据。" />
+              <EmptyState text="暂无人工校准数据。用户提交校准反馈后，这里会显示 AI 判断质量信号。" />
             ) : (
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -582,7 +645,7 @@ export default function AdminPage() {
                   <div className="mt-1 text-xl font-semibold text-emerald-700">
                     {analytics.calibrationStats.promptUsefulRate === null
                       ? '暂无数据'
-                      : `${analytics.calibrationStats.promptUsefulRate}%`}
+                      : `Prompt 建议有用率：${analytics.calibrationStats.promptUsefulRate}%`}
                   </div>
                 </div>
               </div>
@@ -601,7 +664,7 @@ export default function AdminPage() {
 
         <SectionCard title="用户行为分析 Usage Analytics" subtitle="Core product usage paths">
           <p className="mb-4 text-xs leading-relaxed text-slate-500">
-            记录登录用户在核心功能中的使用行为，用于观察真实产品路径，不用于额度限制或商业结算。
+            该模块记录登录用户的核心操作路径，例如内容评测、A/B 测试、保存 Prompt、保存 SOP 和人工校准。它用于判断产品核心路径是否被真实使用，而不是用于额度限制。
           </p>
           {analytics.usageAnalytics.totalUsageEvents === 0 ? (
             <EmptyState text="暂无用户行为数据。登录后完成评测、保存 Prompt/SOP 或提交人工校准后，这里会出现记录。" />
@@ -679,7 +742,7 @@ export default function AdminPage() {
 
         <SectionCard title="最近评测记录 Recent Evaluations" subtitle="Latest 10 evaluation_events">
           {analytics.recentEvaluations.length === 0 ? (
-            <EmptyState text="暂无评测记录。" />
+            <EmptyState text="暂无评测记录。完成一次评测后，这里会自动更新。" />
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-xs">
@@ -718,6 +781,21 @@ export default function AdminPage() {
               </table>
             </div>
           )}
+        </SectionCard>
+
+        <SectionCard title="演示路径 Demo Guide" subtitle="Portfolio walkthrough">
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+            <ol className="space-y-2 text-xs leading-relaxed text-slate-600">
+              <li className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">1. 先在 /evaluate 跑一次低质量内容评测</li>
+              <li className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">2. 保存 Prompt v2 到 Prompt 版本库</li>
+              <li className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">3. 保存 SOP 模板</li>
+              <li className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">4. 提交一次人工校准</li>
+              <li className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">5. 回到 /admin 查看评测记录、用户行为、Badcase 和 PromptOps 数据变化</li>
+            </ol>
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-xs leading-relaxed text-indigo-800">
+              如果当前没有真实用户数据，可以使用 Admin Demo Tools 生成带 [DEMO] 标记的演示数据。Demo 数据仅用于作品集展示，不代表真实用户行为。
+            </div>
+          </div>
         </SectionCard>
 
         <p className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs leading-relaxed text-slate-500 shadow-sm">
