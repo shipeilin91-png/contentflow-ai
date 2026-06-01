@@ -406,10 +406,10 @@ const douyinResult: EvaluationResult = {
       },
     ],
     agreement: {
-      level: 'medium' as const,
+      level: 'low' as const,
       scoreSpread: 34,
-      summary: '四个评审维度存在中等分歧（34 分差），风险评审与其他三维度判断差异较大——无合规风险但平台/受众/创作者适配均需改进',
-      reviewRequired: false,
+      summary: '四个评审维度分歧较大（34 分差），风险评审与其他三维度判断差异明显：无合规红线，但平台、受众和创作者适配均需改进',
+      reviewRequired: true,
     },
   },
 };

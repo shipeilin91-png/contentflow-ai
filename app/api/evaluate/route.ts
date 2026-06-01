@@ -53,11 +53,11 @@ ALL user-facing content MUST be output in Chinese (中文). Field names can rema
 7. All output values must be in Chinese (中文)
 
 ## Scoring Guidelines
-- 0-30: Critical flaws — fundamentally misaligned with platform/audience/goal
-- 31-50: Significant issues — requires major revision
-- 51-70: Acceptable — works but has clear improvement opportunities
-- 71-85: Good — well-optimized with minor gaps
-- 86-100: Excellent — strong alignment across all dimensions
+- 0-39：明显不合格。内容与平台、受众或目标明显不匹配，需要重写。
+- 40-59：较弱。有基础信息，但缺少关键平台信号或用户信任支撑，需要大幅修改。
+- 60-74：基本可用。方向基本正确，但仍存在明显 badcase，建议优化后再使用。
+- 75-89：表现良好。大部分指标匹配，可进入发布前人工复核。
+- 90-100：高度适配。平台、受众和目标高度一致，但仍建议根据实际素材复核。
 
 ## Badcase Requirements
 - Identify at least 3, at most 5 badcases
@@ -101,13 +101,13 @@ Rules:
 You must flag content that may pose compliance, authenticity, or quality risks:
 
 ### Risk Types to Check (use these exact tags)
-- unsupported_claim: Content makes efficacy, sales, ranking, expert endorsement, or effect claims not provided in the input
-- exaggerated_promotion: Absolute claims, over-promises, or clearly exaggerated marketing language
-- fake_experience: Impersonating real user testimonials, buyer reviews, or 素人种草 without real material basis
-- platform_evasion: Content suggests circumventing platform moderation, avoiding sensitive words, or隐形营销
-- medical_financial_legal_risk: Content involves medical, financial, or legal deterministic advice or effect promises
-- low_context_confidence: Insufficient input information causing low AI confidence — human review needed
-- plagiarism_imitation_risk: Content is too close to a benchmark/reference, risking imitation or rewriting
+- unsupported_claim: 内容包含用户未提供依据的功效、销量、排名、专家背书或效果声明
+- exaggerated_promotion: 内容使用绝对化、过度承诺或明显夸大的营销表达
+- fake_experience: 内容在缺少真实素材依据时冒充真实用户体验、买家评价或素人种草
+- platform_evasion: 内容暗示绕过平台审核、规避敏感词或进行隐形营销
+- medical_financial_legal_risk: 内容涉及医疗、金融、法律等高风险领域的确定性建议或效果承诺
+- low_context_confidence: 输入信息不足导致 AI 判断置信度较低，需要人工复核
+- plagiarism_imitation_risk: 内容过度贴近标杆内容，存在仿写、洗稿或搬运风险
 
 ### Risk Level Rules
 - If content contains "100%有效", "全网第一", "根治", "医生推荐", "真实用户亲测" without provided evidence, riskLevel is at least medium.
@@ -184,20 +184,20 @@ function buildUserPrompt(req: EvaluateRequest): string {
   const platformRubric =
     req.platform === 'douyin'
       ? `DOUYIN RUBRIC:
-- 0-3s Hook: Does the content open with a conflict/contrast/curiosity hook?
-- Completion drivers: Is there rhythm pacing, suspense, or information gaps?
-- Emotional curve: Are there intensity shifts, not flat narration?
-- Contrast/conflict: Any surprising comparisons or unexpected reveals?
-- Interaction design: Are there moments designed to trigger comments?
-- IP memory: Is there a signature element the creator is known for?
-- Avoid: flat科普, lecture tone, hard-ad format, no emotional peaks`
+- 前 3 秒 Hook：开头是否有冲突、反差、痛点或好奇钩子？
+- 完播动机：是否有节奏递进、悬念或信息差，推动用户看完？
+- 情绪曲线：是否有强弱变化，而不是平铺直叙？
+- 冲突/反差：是否有意外对比、反常识或转折？
+- 互动设计：是否设计了能触发评论、转发或讨论的节点？
+- IP 记忆点：是否有稳定的人设、口头禅、视觉符号或观点风格？
+- 避免：平铺科普、说教口吻、硬广格式、缺少情绪峰值`
       : `XIAOHONGSHU RUBRIC:
-- Search intent: Does content target real search keywords?
-- Save value: Is there a checklist, comparison table, or summary?
-- Authenticity: Does it read like genuine personal experience?
-- Trust signals: Before/after details, usage timeline, specific scenarios?
-- Soft种草: Persuasion through narrative, not hard-selling?
-- Avoid: brand-speak, exaggerated claims, vague conclusions, over-produced tone`;
+- 搜索意图：内容是否覆盖用户真实会搜索的关键词或问题？
+- 收藏价值：是否有清单、对比表、步骤或总结，值得收藏？
+- 真实体验：是否像真人经验分享，而不是品牌新闻稿？
+- 信任信号：是否有前后对比、使用周期、具体场景或限制条件？
+- 软种草：是否通过个人叙事建立说服力，而不是硬推销？
+- 避免：品牌方话术、夸大声明、结论模糊、过度精修/广告片口吻`;
 
   let prompt = `## Platform
 ${req.platform === 'douyin' ? 'Douyin (抖音)' : 'XiaoHongShu (小红书)'}
@@ -232,11 +232,11 @@ Return a SINGLE JSON object with exactly this structure:
 
 {
   "audiencePersona": {
-    "userIntent": "string describing the user's journey from discovery to decision",
-    "psychologicalNeeds": ["need1", "need2", "need3", "need4"],
-    "trustBarriers": ["barrier1", "barrier2", "barrier3"],
-    "dislikedExpressions": ["expression1", "expression2"],
-    "contentPreference": "string describing preferred content format/style"
+    "userIntent": "中文字符串：描述用户从发现到决策的路径",
+    "psychologicalNeeds": ["中文心理需求1", "中文心理需求2", "中文心理需求3", "中文心理需求4"],
+    "trustBarriers": ["中文信任障碍1", "中文信任障碍2", "中文信任障碍3"],
+    "dislikedExpressions": ["中文反感表达1", "中文反感表达2"],
+    "contentPreference": "中文字符串：描述用户偏好的内容结构、语气或呈现方式"
   },
   "triFlowScores": {
     "platformFit": 0-100 integer,
@@ -247,45 +247,45 @@ Return a SINGLE JSON object with exactly this structure:
   "badcases": [
     {
       "layer": "platform" | "audience" | "creator",
-      "type": "string - specific issue type name",
+      "type": "中文字符串：具体问题类型名称",
       "badcaseTag": "string - MUST be one of the taxonomy tags listed above",
-      "badcaseLabel": "string - the Chinese label for the tag",
-      "evidence": "string - quote from the original content",
-      "fix": "string - concrete, actionable improvement"
+      "badcaseLabel": "中文字符串：该 tag 对应的中文标签",
+      "evidence": "中文字符串：引用或转述原内容中的证据",
+      "fix": "中文字符串：具体、可执行的修复建议"
     }
   ],
   "promptV2": {
-    "optimizedPrompt": "string - the complete rewritten prompt",
-    "changeReasons": ["reason1", "reason2", ...],
-    "expectedImprovements": ["improvement1", "improvement2", ...]
+    "optimizedPrompt": "中文字符串：完整可用的优化后 Prompt",
+    "changeReasons": ["中文变更原因1", "中文变更原因2", ...],
+    "expectedImprovements": ["中文预期改进1", "中文预期改进2", ...]
   },
   "confidence": {
     "score": 0-100 integer,
     "level": "high" | "medium" | "low",
-    "reasons": ["reason1", "reason2"]
+    "reasons": ["中文置信度原因1", "中文置信度原因2"]
   },
   "riskAssessment": {
     "riskLevel": "low" | "medium" | "high",
     "reviewRequired": true/false,
     "riskTypes": ["unsupported_claim", "exaggerated_promotion", ...],
-    "reasons": ["risk reason1", "risk reason2"]
+    "reasons": ["中文风险原因1", "中文风险原因2"]
   },
   "multiJudge": {
     "judges": [
       {
         "judgeType": "platform" | "audience" | "creator" | "risk",
-        "name": "string - judge display name",
+        "name": "中文为主的评审名称，可附英文辅助名",
         "score": 0-100 integer,
         "verdict": "pass" | "needs_revision" | "high_risk",
-        "keyConcern": "string - most critical issue from this judge's perspective",
-        "evidence": "string - quote or reference from the content",
-        "recommendation": "string - specific fix from this judge's perspective"
+        "keyConcern": "中文字符串：该评审视角下最关键的问题",
+        "evidence": "中文字符串：该判断对应的内容证据",
+        "recommendation": "中文字符串：该评审视角下的具体修复建议"
       }
     ],
     "agreement": {
       "level": "high" | "medium" | "low",
       "scoreSpread": number - max judge score minus min judge score,
-      "summary": "string - one sentence explaining agreement level",
+      "summary": "中文字符串：用一句话说明一致性等级和分歧来源",
       "reviewRequired": true/false
     }
   }
