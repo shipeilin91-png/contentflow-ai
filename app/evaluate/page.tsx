@@ -187,7 +187,7 @@ export default function EvaluatePage() {
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFallback, setIsFallback] = useState(false);
-  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(['B']));
+  const [openSection, setOpenSection] = useState<SectionKey | null>('B');
   const [resultLanguage, setResultLanguage] = useState<ResultLanguage>('zh');
   const [copied, setCopied] = useState(false);
   const hasSavedRef = useRef(false);
@@ -236,9 +236,7 @@ export default function EvaluatePage() {
   };
 
   const toggleSection = (key: SectionKey) => {
-    const next = new Set(openSections);
-    if (next.has(key)) next.delete(key); else next.add(key);
-    setOpenSections(next);
+    setOpenSection((current) => (current === key ? null : key));
   };
 
   const handleCopy = async (text: string) => {
@@ -451,7 +449,7 @@ export default function EvaluatePage() {
                 <p className="mt-3 text-[10px] text-slate-400">评分范围：0-100。分数越高代表越适配当前平台、受众和内容目标；评分仅用于内容优化参考，不代表真实平台推荐结果或转化预测。</p>
               </section>
 
-              <AccordionSection letter="A" title="受众画像" subtitle="Audience Persona" iconClass="bg-blue-100 text-blue-700" open={openSections.has('A')} onToggle={() => toggleSection('A')}>
+              <AccordionSection letter="A" title="受众画像" subtitle="Audience Persona" iconClass="bg-blue-100 text-blue-700" open={openSection === 'A'} onToggle={() => toggleSection('A')}>
                 <div className="space-y-3 text-sm">
                   <div><span className={sectionLabel}>用户意图 <span className="text-slate-300">User Intent</span></span><p className="mt-0.5 text-xs text-slate-700">{report.audiencePersona.userIntent}</p></div>
                   <div><span className={sectionLabel}>心理需求 <span className="text-slate-300">Psychological Needs</span></span><ul className="mt-1 space-y-1">{report.audiencePersona.psychologicalNeeds.map((n,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-blue-400"/>{n}</li>)}</ul></div>
@@ -460,7 +458,7 @@ export default function EvaluatePage() {
                 </div>
               </AccordionSection>
 
-              <AccordionSection letter="B" title="TriFlow 三方评分" subtitle="Platform / Audience / Creator Goal" iconClass="bg-indigo-100 text-indigo-700" open={openSections.has('B')} onToggle={() => toggleSection('B')}>
+              <AccordionSection letter="B" title="TriFlow 三方评分" subtitle="Platform / Audience / Creator Goal" iconClass="bg-indigo-100 text-indigo-700" open={openSection === 'B'} onToggle={() => toggleSection('B')}>
                 <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3">
                   <p className="text-xs font-medium text-slate-600">评分标准：评分范围 0-100</p>
                   <div className="mt-2 grid gap-1 text-[10px] text-slate-500 sm:grid-cols-2">
@@ -490,7 +488,7 @@ export default function EvaluatePage() {
                 </div>
               </AccordionSection>
 
-              <AccordionSection letter="C" title="问题归因" subtitle="Badcase Diagnosis" iconClass="bg-red-100 text-red-700" open={openSections.has('C')} onToggle={() => toggleSection('C')}>
+              <AccordionSection letter="C" title="问题归因" subtitle="Badcase Diagnosis" iconClass="bg-red-100 text-red-700" open={openSection === 'C'} onToggle={() => toggleSection('C')}>
                 <div className="space-y-2.5">
                   {report.badcases.map((bc, i) => (
                     <div key={i} className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
@@ -512,7 +510,7 @@ export default function EvaluatePage() {
                 </div>
               </AccordionSection>
 
-              <AccordionSection letter="D" title="Prompt v2 优化建议" subtitle="Prompt Optimizer" iconClass="bg-emerald-100 text-emerald-700" open={openSections.has('D')} onToggle={() => toggleSection('D')}>
+              <AccordionSection letter="D" title="Prompt v2 优化建议" subtitle="Prompt Optimizer" iconClass="bg-emerald-100 text-emerald-700" open={openSection === 'D'} onToggle={() => toggleSection('D')}>
                 <div className="relative">
                   <pre className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 pr-24 text-xs leading-relaxed text-slate-700 font-mono">{report.promptV2.optimizedPrompt}</pre>
                   <button type="button" onClick={() => handleCopy(report.promptV2.optimizedPrompt)}
@@ -526,8 +524,9 @@ export default function EvaluatePage() {
                 </div>
               </AccordionSection>
 
-              {hasMultiJudge && (
-                <AccordionSection letter="E" title="多评审一致性" subtitle="Multi-Judge Evaluation" iconClass={report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'} open={openSections.has('E')} onToggle={() => toggleSection('E')}>
+              <AccordionSection letter="E" title="多评审一致性" subtitle="Multi-Judge Evaluation" iconClass={hasMultiJudge ? (report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'E'} onToggle={() => toggleSection('E')}>
+                {hasMultiJudge ? (
+                  <>
                   <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${report.multiJudge!.agreement.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.multiJudge!.agreement.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{report.multiJudge!.agreement.level === 'high' ? '高一致' : report.multiJudge!.agreement.level === 'medium' ? '中等一致' : '低一致'}</span>
@@ -553,21 +552,29 @@ export default function EvaluatePage() {
                     ))}
                   </div>
                   <p className="mt-3 text-[10px] leading-relaxed text-slate-400">多评审机制用于辅助识别评测分歧和复核优先级，不代表真实平台分发结果、法律意见或商业转化预测。</p>
-                </AccordionSection>
-              )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-500">当前评测结果未返回多评审数据，旧结果仍可正常查看其他模块。</p>
+                )}
+              </AccordionSection>
 
-              {hasConfidence && (
-                <AccordionSection letter="F" title="评测置信度" subtitle="Confidence" iconClass={report.confidence!.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.confidence!.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'} open={openSections.has('F')} onToggle={() => toggleSection('F')}>
+              <AccordionSection letter="F" title="评测置信度" subtitle="Confidence" iconClass={hasConfidence ? (report.confidence!.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.confidence!.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'F'} onToggle={() => toggleSection('F')}>
+                {hasConfidence ? (
+                  <>
                   <div className="mb-3 flex items-center gap-3">
                     <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${report.confidence!.level === 'high' ? 'bg-emerald-100 text-emerald-700' : report.confidence!.level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{report.confidence!.level === 'high' ? '高置信' : report.confidence!.level === 'medium' ? '中置信' : '低置信'}</span>
                     <span className="text-sm font-bold text-slate-700">{report.confidence!.score}/100</span>
                   </div>
                   <ul className="space-y-1.5">{report.confidence!.reasons.map((r,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-slate-400"/>{r}</li>)}</ul>
-                </AccordionSection>
-              )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-500">当前评测结果未返回置信度数据。</p>
+                )}
+              </AccordionSection>
 
-              {hasRisk && (
-                <AccordionSection letter="G" title="风险分层" subtitle="Risk Assessment" iconClass={report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-700' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'} open={openSections.has('G')} onToggle={() => toggleSection('G')}>
+              <AccordionSection letter="G" title="风险分层" subtitle="Risk Assessment" iconClass={hasRisk ? (report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-700' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-100 text-slate-600'} open={openSection === 'G'} onToggle={() => toggleSection('G')}>
+                {hasRisk ? (
+                  <>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${report.riskAssessment!.riskLevel === 'high' ? 'bg-red-100 text-red-600' : report.riskAssessment!.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{report.riskAssessment!.riskLevel === 'high' ? '高风险' : report.riskAssessment!.riskLevel === 'medium' ? '中风险' : '低风险'}</span>
                     {report.riskAssessment!.reviewRequired && <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">建议人工复核</span>}
@@ -577,10 +584,13 @@ export default function EvaluatePage() {
                   </div>
                   <ul className="mb-3 space-y-1.5">{report.riskAssessment!.reasons.map((r,i)=><li key={i} className="flex items-start gap-2 text-xs text-slate-600"><span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-slate-400"/>{r}</li>)}</ul>
                   <p className="text-[10px] leading-relaxed text-slate-400">风险分层仅用于内容优化与人工复核参考，不代表法律意见、平台审核结果或真实转化预测。</p>
-                </AccordionSection>
-              )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-500">当前评测结果未返回风险分层数据。</p>
+                )}
+              </AccordionSection>
 
-              <AccordionSection letter="H" title="保存与校准" subtitle="Actions & Calibration" iconClass="bg-sky-100 text-sky-700" open={openSections.has('H')} onToggle={() => toggleSection('H')}>
+              <AccordionSection letter="H" title="保存与校准" subtitle="Actions & Calibration" iconClass="bg-sky-100 text-sky-700" open={openSection === 'H'} onToggle={() => toggleSection('H')}>
                 <div className="space-y-4">
                   <div>
                     <span className={sectionLabel}>保存与沉淀 <span className="text-slate-300">Actions</span></span>
