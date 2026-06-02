@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "benchmark": "tsx scripts/run-benchmark.ts",
     "start": "next start",
     "lint": "eslint"
   },
@@ -23,6 +24,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

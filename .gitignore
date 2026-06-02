@@ -44,3 +44,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# benchmark outputs
+benchmark-results/*
+!benchmark-results/.gitkeep
