@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   abTestBenchmarkCases,
@@ -62,7 +62,71 @@ interface AnalysisData {
     averageImprovementDelta: number | null;
     promptBWinRate: number | null;
   };
+  platformModuleStats: PlatformModuleStats;
+  capabilityStats: CapabilityStats;
   resumeMetricCandidates: string[];
+}
+
+interface EvaluateModuleStats {
+  total: number;
+  successCount: number;
+  averageOverallScore: number | null;
+  highRiskCount: number;
+  topBadcases: { label: string; count: number }[];
+}
+
+interface AbTestModuleStats {
+  total: number;
+  promptBWinRate: number | null;
+  averageImprovementDelta: number | null;
+  winnerMatchedRate: number | null;
+}
+
+interface CompareModuleStats {
+  total: number;
+  successCount: number;
+  transferablePatternCount: number;
+  aigcWeaknessCount: number;
+}
+
+interface PlatformCapabilityStats {
+  evaluate: EvaluateModuleStats;
+  abTest: AbTestModuleStats;
+  compare: CompareModuleStats;
+}
+
+interface PlatformModuleStats {
+  xiaohongshu: PlatformCapabilityStats;
+  douyin: PlatformCapabilityStats;
+}
+
+interface CapabilityStats {
+  evaluation: {
+    total: number;
+    successRate: number | null;
+    averageOverallScore: number | null;
+    riskDetectionCount: number;
+    badcaseExtractionRate: number | null;
+  };
+  abTest: {
+    total: number;
+    promptBWinRate: number | null;
+    averageImprovementDelta: number | null;
+    winnerMatchedRate: number | null;
+  };
+  pgcCompare: {
+    total: number;
+    successRate: number | null;
+    transferablePatternExtractionRate: number | null;
+    aigcWeaknessExtractionRate: number | null;
+  };
+  riskAssessment: {
+    lowRiskCount: number;
+    mediumRiskCount: number;
+    highRiskCount: number;
+    highRiskRate: number | null;
+    mediumOrHighRiskRate: number | null;
+  };
 }
 
 const BASE_URL = (process.env.BENCHMARK_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
@@ -316,6 +380,142 @@ function badcaseExplanation(label: string): string {
   return '说明该类问题在当前合成样例中重复出现，适合纳入 Prompt Optimizer 和 SOP 模板。';
 }
 
+function percentage(part: number, total: number): number | null {
+  if (total === 0) return null;
+  return Number(((part / total) * 100).toFixed(1));
+}
+
+function readCompareTransferablePatterns(response: unknown): unknown[] {
+  const record = asRecord(response);
+  const transferable = record.transferableRules || record.transferablePatterns;
+  return Array.isArray(transferable) ? transferable : [];
+}
+
+function readCompareWeaknesses(response: unknown): unknown[] {
+  const weaknesses = asRecord(response).aigcWeaknesses;
+  return Array.isArray(weaknesses) ? weaknesses : [];
+}
+
+function topBadcaseLabels(results: BenchmarkResult[], limit = 5): { label: string; count: number }[] {
+  const counts = countBy(
+    results.flatMap((item) => item.badcases || []),
+    (label) => label
+  );
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([label, count]) => ({ label, count }));
+}
+
+function computeEvaluateModuleStats(results: BenchmarkResult[]): EvaluateModuleStats {
+  const success = results.filter((item) => item.status === 'success');
+  return {
+    total: results.length,
+    successCount: success.length,
+    averageOverallScore: average(
+      success.map((item) => item.overallScore).filter((value): value is number => typeof value === 'number')
+    ),
+    highRiskCount: success.filter((item) => item.riskLevel === 'high').length,
+    topBadcases: topBadcaseLabels(success),
+  };
+}
+
+function computeAbTestModuleStats(results: BenchmarkResult[]): AbTestModuleStats {
+  const success = results.filter((item) => item.status === 'success');
+  const withWinner = success.filter((item) => item.winner);
+  const deltas = success
+    .map((item) => item.improvementDelta)
+    .filter((value): value is number => typeof value === 'number');
+  return {
+    total: results.length,
+    promptBWinRate: percentage(withWinner.filter((item) => item.winner === 'B').length, withWinner.length),
+    averageImprovementDelta: average(deltas),
+    winnerMatchedRate: percentage(withWinner.filter((item) => item.winnerMatched).length, withWinner.length),
+  };
+}
+
+function computeCompareModuleStats(results: BenchmarkResult[]): CompareModuleStats {
+  const success = results.filter((item) => item.status === 'success');
+  return {
+    total: results.length,
+    successCount: success.length,
+    transferablePatternCount: success.reduce(
+      (sum, item) => sum + readCompareTransferablePatterns(item.response).length,
+      0
+    ),
+    aigcWeaknessCount: success.reduce((sum, item) => sum + readCompareWeaknesses(item.response).length, 0),
+  };
+}
+
+function computePlatformModuleStats(results: BenchmarkResult[]): PlatformModuleStats {
+  const statsFor = (platform: 'xiaohongshu' | 'douyin'): PlatformCapabilityStats => {
+    const platformResults = results.filter((item) => item.platform === platform);
+    return {
+      evaluate: computeEvaluateModuleStats(platformResults.filter((item) => item.module === 'evaluate')),
+      abTest: computeAbTestModuleStats(platformResults.filter((item) => item.module === 'ab-test')),
+      compare: computeCompareModuleStats(platformResults.filter((item) => item.module === 'compare')),
+    };
+  };
+
+  return {
+    xiaohongshu: statsFor('xiaohongshu'),
+    douyin: statsFor('douyin'),
+  };
+}
+
+function computeCapabilityStats(results: BenchmarkResult[], riskCounts: Record<string, number>): CapabilityStats {
+  const evaluate = results.filter((item) => item.module === 'evaluate');
+  const evaluateSuccess = evaluate.filter((item) => item.status === 'success');
+  const compare = results.filter((item) => item.module === 'compare');
+  const compareSuccess = compare.filter((item) => item.status === 'success');
+  const abTest = results.filter((item) => item.module === 'ab-test');
+  const abStats = computeAbTestModuleStats(abTest);
+  const totalRisk = (riskCounts.low || 0) + (riskCounts.medium || 0) + (riskCounts.high || 0);
+
+  return {
+    evaluation: {
+      total: evaluate.length,
+      successRate: percentage(evaluateSuccess.length, evaluate.length),
+      averageOverallScore: average(
+        evaluateSuccess
+          .map((item) => item.overallScore)
+          .filter((value): value is number => typeof value === 'number')
+      ),
+      riskDetectionCount: evaluateSuccess.filter((item) => item.riskLevel === 'medium' || item.riskLevel === 'high')
+        .length,
+      badcaseExtractionRate: percentage(
+        evaluateSuccess.filter((item) => (item.badcases || []).length > 0).length,
+        evaluateSuccess.length
+      ),
+    },
+    abTest: {
+      total: abStats.total,
+      promptBWinRate: abStats.promptBWinRate,
+      averageImprovementDelta: abStats.averageImprovementDelta,
+      winnerMatchedRate: abStats.winnerMatchedRate,
+    },
+    pgcCompare: {
+      total: compare.length,
+      successRate: percentage(compareSuccess.length, compare.length),
+      transferablePatternExtractionRate: percentage(
+        compareSuccess.filter((item) => readCompareTransferablePatterns(item.response).length > 0).length,
+        compareSuccess.length
+      ),
+      aigcWeaknessExtractionRate: percentage(
+        compareSuccess.filter((item) => readCompareWeaknesses(item.response).length > 0).length,
+        compareSuccess.length
+      ),
+    },
+    riskAssessment: {
+      lowRiskCount: riskCounts.low || 0,
+      mediumRiskCount: riskCounts.medium || 0,
+      highRiskCount: riskCounts.high || 0,
+      highRiskRate: percentage(riskCounts.high || 0, totalRisk),
+      mediumOrHighRiskRate: percentage((riskCounts.medium || 0) + (riskCounts.high || 0), totalRisk),
+    },
+  };
+}
+
 function computeAnalysis(results: BenchmarkResult[]): AnalysisData {
   const success = results.filter((item) => item.status === 'success');
   const scored = success.filter((item) => typeof item.overallScore === 'number');
@@ -352,6 +552,10 @@ function computeAnalysis(results: BenchmarkResult[]): AnalysisData {
     {}
   );
 
+  const riskCounts = countBy(success, (item) => item.riskLevel || item.expectedRiskLevel);
+  const platformModuleStats = computePlatformModuleStats(results);
+  const capabilityStats = computeCapabilityStats(results, riskCounts);
+
   const analysis: AnalysisData = {
     totalCases: results.length,
     successCount: results.filter((item) => item.status === 'success').length,
@@ -366,7 +570,7 @@ function computeAnalysis(results: BenchmarkResult[]): AnalysisData {
     },
     scoreBandCounts,
     topBadcases,
-    riskCounts: countBy(success, (item) => item.riskLevel || item.expectedRiskLevel),
+    riskCounts,
     abTestStats: {
       total: abResults.length,
       winnerMatched: matched,
@@ -376,18 +580,21 @@ function computeAnalysis(results: BenchmarkResult[]): AnalysisData {
       promptBWinRate:
         abWithWinner.length === 0 ? null : Number(((promptBWins / abWithWinner.length) * 100).toFixed(1)),
     },
+    platformModuleStats,
+    capabilityStats,
     resumeMetricCandidates: [],
   };
 
   const successRate = Number(((analysis.successCount / analysis.totalCases) * 100).toFixed(1));
   const top3 = analysis.topBadcases.slice(0, 3).map((item) => item.label).join('、') || '暂无';
   analysis.resumeMetricCandidates = [
-    `在 ${analysis.totalCases} 条合成 benchmark case 中，ContentFlow 自动完成 ${analysis.successCount} 条测试，成功率 ${successRate}%。`,
-    analysis.abTestStats.promptBWinRate === null
-      ? 'A/B 测试样例已接入自动双跑，当前暂无可计算的 Prompt B 胜出率。'
-      : `在 A/B 测试样例中，Prompt B 在 ${analysis.abTestStats.promptBWinRate}% case 中获得更高综合分。`,
+    `基于 ${analysis.totalCases} 条合成 benchmark case 验证评测链路，ContentFlow 自动完成 ${analysis.successCount} 条测试，成功率 ${successRate}%。`,
+    `A/B 模块中优化版 Prompt 胜出率达 ${analysis.capabilityStats.abTest.promptBWinRate ?? '暂无'}%，平均综合分提升 ${analysis.capabilityStats.abTest.averageImprovementDelta ?? '暂无'} 分，winnerMatched rate 为 ${analysis.capabilityStats.abTest.winnerMatchedRate ?? '暂无'}%。`,
+    `Evaluation 模块 badcase 提取率为 ${analysis.capabilityStats.evaluation.badcaseExtractionRate ?? '暂无'}%，可将平台内容问题拆解为可解释评分、Badcase 和风险等级。`,
+    `PGC Compare 模块可迁移策略提取率为 ${analysis.capabilityStats.pgcCompare.transferablePatternExtractionRate ?? '暂无'}%，AIGC weakness 提取率为 ${analysis.capabilityStats.pgcCompare.aigcWeaknessExtractionRate ?? '暂无'}%，可反哺 Prompt 模板与 SOP 迭代。`,
+    `Risk Assessment 识别 high-risk 内容 ${analysis.capabilityStats.riskAssessment.highRiskCount} 条（${analysis.capabilityStats.riskAssessment.highRiskRate ?? '暂无'}%），medium/high risk 合计 ${analysis.capabilityStats.riskAssessment.mediumOrHighRiskRate ?? '暂无'}%，可辅助人工复核优先级排序。`,
     `高频 Badcase Top 3 为 ${top3}，可用于指导 Prompt Optimizer 和 SOP Builder 优化方向。`,
-    `高风险内容识别出 ${analysis.riskCounts.high || 0} 条，可辅助人工复核优先级排序。`,
+    '以上指标来自合成 benchmark 测试集，不代表真实用户线上数据。',
   ];
 
   return analysis;
@@ -837,6 +1044,12 @@ function createAnalysisReport(results: BenchmarkResult[], analysis: AnalysisData
     .sort((a, b) => b[1] - a[1])
     .map(([level, count]) => `- ${level}: ${count}`)
     .join('\n');
+  const xhs = analysis.platformModuleStats.xiaohongshu;
+  const dy = analysis.platformModuleStats.douyin;
+  const formatPercent = (value: number | null) => (value === null ? '暂无数据' : `${value}%`);
+  const formatNumber = (value: number | null) => (value === null ? '暂无数据' : String(value));
+  const formatTopBadcases = (items: { label: string; count: number }[]) =>
+    items.length === 0 ? '暂无' : items.slice(0, 3).map((item) => `${item.label}（${item.count}）`).join('、');
 
   return `# ContentFlow Benchmark Analysis
 
@@ -897,7 +1110,21 @@ ${analysis.topBadcases
 
 当前结论基于合成 benchmark case 与 API 返回结果，样本量仍然有限，应作为产品验证信号而非最终统计结论。
 
-## 6. A/B 测试效果分析
+## 6. 平台 × 能力模块表现
+
+### 小红书场景
+
+- Evaluation 模块长处：在 ${xhs.evaluate.successCount}/${xhs.evaluate.total} 条小红书评测样例中完成评估，平均综合分为 ${formatNumber(xhs.evaluate.averageOverallScore)}/100；高频问题集中在 ${formatTopBadcases(xhs.evaluate.topBadcases)}，说明 ContentFlow 能识别搜索意图、购买顾虑、收藏价值、真实体验等影响种草转化的关键问题。
+- A/B Test 模块长处：Prompt B 胜出率为 ${formatPercent(xhs.abTest.promptBWinRate)}，平均 improvementDelta 为 ${formatNumber(xhs.abTest.averageImprovementDelta)}，winnerMatched rate 为 ${formatPercent(xhs.abTest.winnerMatchedRate)}。这说明引入搜索词、真实体验、限制条件和可收藏结构后，小红书内容适配度有可量化提升。
+- PGC Compare 模块长处：${xhs.compare.successCount}/${xhs.compare.total} 条小红书 PGC 对比样例成功完成，提取 ${xhs.compare.transferablePatternCount} 条可迁移策略和 ${xhs.compare.aigcWeaknessCount} 条 AIGC 短板，可用于定位 AI 内容与 PGC 标杆之间的信任信号、真实体验和结构差距。
+
+### 抖音场景
+
+- Evaluation 模块长处：在 ${dy.evaluate.successCount}/${dy.evaluate.total} 条抖音评测样例中完成评估，平均综合分为 ${formatNumber(dy.evaluate.averageOverallScore)}/100；高频问题集中在 ${formatTopBadcases(dy.evaluate.topBadcases)}，说明 ContentFlow 能识别前三秒 Hook、冲突反差、完播动机、互动触发等短视频关键问题。
+- A/B Test 模块长处：Prompt B 胜出率为 ${formatPercent(dy.abTest.promptBWinRate)}，平均 improvementDelta 为 ${formatNumber(dy.abTest.averageImprovementDelta)}，winnerMatched rate 为 ${formatPercent(dy.abTest.winnerMatchedRate)}。这说明加入镜头语言、节奏转折、真实场景和评论触发后，抖音脚本适配度有可量化提升。
+- PGC Compare 模块长处：${dy.compare.successCount}/${dy.compare.total} 条抖音 PGC 对比样例成功完成，提取 ${dy.compare.transferablePatternCount} 条可迁移策略和 ${dy.compare.aigcWeaknessCount} 条 AIGC 短板，可用于发现 AI 脚本与 PGC 标杆之间的镜头感、节奏和互动机制差距。
+
+## 7. A/B 测试效果分析
 
 - A/B case 总数：${analysis.abTestStats.total}
 - 自动判断 winner 的 case 数：${results.filter((item) => item.module === 'ab-test' && item.winner).length}
@@ -912,19 +1139,39 @@ ${analysis.topBadcases
 
 Prompt v2 是否通常优于 Prompt v1，需要结合 winnerMatched rate 与 improvementDelta 共同判断。当前测试集中，Prompt B 主要通过加入目标受众、平台机制、真实场景、限制条件、Hook / 互动 / 镜头感来提升内容质量。
 
-## 7. 风险识别分析
+## 8. 风险识别分析
 
 ${riskTypes || '- 暂无风险统计'}
 
 风险分析重点观察 ContentFlow 是否能识别夸大宣传、未支撑功效、输入信息不足、伪装真实体验等风险。若 high / medium 风险返回较少，应优先扩充高风险样例和 risk taxonomy。
 
-## 8. 可用于简历/作品集的指标候选
+## 9. 模块能力优势总结
+
+### 1. Evaluation 模块
+
+- 优势：能将平台内容质量问题拆解为可解释评分、Badcase、风险等级。
+- 数据：${analysis.capabilityStats.evaluation.total} 条 evaluate case，成功率 ${formatPercent(analysis.capabilityStats.evaluation.successRate)}，平均综合分 ${formatNumber(analysis.capabilityStats.evaluation.averageOverallScore)}/100，风险识别数量 ${analysis.capabilityStats.evaluation.riskDetectionCount}，badcase 提取率 ${formatPercent(analysis.capabilityStats.evaluation.badcaseExtractionRate)}。
+
+### 2. A/B Test 模块
+
+- 优势：能验证 Prompt 优化是否真的带来质量提升。
+- 数据：${analysis.capabilityStats.abTest.total} 条 A/B case，Prompt B 胜出率 ${formatPercent(analysis.capabilityStats.abTest.promptBWinRate)}，平均 improvementDelta ${formatNumber(analysis.capabilityStats.abTest.averageImprovementDelta)}，winnerMatched rate ${formatPercent(analysis.capabilityStats.abTest.winnerMatchedRate)}。
+
+### 3. PGC Compare 模块
+
+- 优势：能从 PGC 标杆中提取可迁移结构，发现 AIGC 内容短板。
+- 数据：${analysis.capabilityStats.pgcCompare.total} 条 compare case，成功率 ${formatPercent(analysis.capabilityStats.pgcCompare.successRate)}，可迁移策略提取率 ${formatPercent(analysis.capabilityStats.pgcCompare.transferablePatternExtractionRate)}，AIGC weakness 提取率 ${formatPercent(analysis.capabilityStats.pgcCompare.aigcWeaknessExtractionRate)}。
+
+### 4. Risk Assessment 模块
+
+- 优势：能辅助人工复核优先级排序。
+- 数据：high-risk rate ${formatPercent(analysis.capabilityStats.riskAssessment.highRiskRate)}，medium/high risk rate ${formatPercent(analysis.capabilityStats.riskAssessment.mediumOrHighRiskRate)}；其中 high-risk ${analysis.capabilityStats.riskAssessment.highRiskCount} 条，medium-risk ${analysis.capabilityStats.riskAssessment.mediumRiskCount} 条。
+
+## 10. 可直接用于简历的数据表达
 
 ${analysis.resumeMetricCandidates.map((item) => `- ${item}`).join('\n')}
 
-以上指标来自合成 benchmark 测试集，不代表真实用户线上数据。
-
-## 9. 产品迭代建议
+## 11. 产品迭代建议
 
 - 继续扩充小红书和抖音各自的 benchmark 覆盖，尤其是高风险和低置信样例。
 - 将高频 Badcase 纳入 Prompt Optimizer 的显式约束，减少泛化输出。
@@ -932,7 +1179,7 @@ ${analysis.resumeMetricCandidates.map((item) => `- ${item}`).join('\n')}
 - 为 /compare 增加结构化评分字段，方便量化 PGC/AIGC 差距。
 - 引入人工标注对齐，用真实人工反馈校准 LLM-as-a-Judge 的 Rubric。
 
-## 10. 边界说明
+## 12. 边界说明
 
 - 当前 benchmark 使用合成测试样例，不直接复制真实平台内容。
 - 结果用于产品验证和作品集展示，不代表真实平台推荐效果或转化预测。
@@ -950,7 +1197,28 @@ async function writeReports(results: BenchmarkResult[], analysis: AnalysisData) 
   await writeFile(path.join(RESULTS_DIR, 'benchmark-analysis-data.json'), JSON.stringify(analysis, null, 2));
 }
 
+async function loadLatestResults(): Promise<BenchmarkResult[]> {
+  const latestPath = path.join(RESULTS_DIR, 'latest.json');
+  const raw = await readFile(latestPath, 'utf8');
+  const parsed = JSON.parse(raw) as { results?: unknown };
+  if (!Array.isArray(parsed.results)) {
+    throw new Error('benchmark-results/latest.json does not contain a results array');
+  }
+  return parsed.results as BenchmarkResult[];
+}
+
 async function main() {
+  if (process.env.BENCHMARK_REUSE_LATEST === '1') {
+    console.log('Regenerating benchmark reports from benchmark-results/latest.json');
+    const results = await loadLatestResults();
+    const analysis = computeAnalysis(results);
+    await writeReports(results, analysis);
+    console.log(
+      `Reports regenerated: success=${analysis.successCount}, failed=${analysis.failedCount}, skipped=${analysis.skippedCount}`
+    );
+    return;
+  }
+
   console.log(`Running ContentFlow benchmark against ${BASE_URL}`);
   console.log(
     `Cases: evaluate=${evaluateBenchmarkCases.length}, ab-test=${abTestBenchmarkCases.length}, compare=${compareBenchmarkCases.length}`
