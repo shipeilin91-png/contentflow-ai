@@ -47,7 +47,7 @@ export type BenchmarkCase =
   | AbTestBenchmarkCase
   | CompareBenchmarkCase;
 
-export const evaluateBenchmarkCases: EvaluateBenchmarkCase[] = [
+const baseEvaluateBenchmarkCases: EvaluateBenchmarkCase[] = [
   {
     id: 'eval-xhs-sunscreen-001',
     title: '小红书｜敏感肌通勤防晒霜｜泛泛种草',
@@ -204,7 +204,7 @@ export const evaluateBenchmarkCases: EvaluateBenchmarkCase[] = [
   },
 ];
 
-export const abTestBenchmarkCases: AbTestBenchmarkCase[] = [
+const baseAbTestBenchmarkCases: AbTestBenchmarkCase[] = [
   {
     id: 'ab-xhs-studyabroad-001',
     title: '小红书｜留学申请服务｜泛广告 vs 决策清单',
@@ -398,7 +398,7 @@ export const abTestBenchmarkCases: AbTestBenchmarkCase[] = [
   },
 ];
 
-export const compareBenchmarkCases: CompareBenchmarkCase[] = [
+const baseCompareBenchmarkCases: CompareBenchmarkCase[] = [
   {
     id: 'cmp-xhs-sunscreen-001',
     title: '小红书｜敏感肌通勤防晒霜｜AIGC vs 合成 PGC',
@@ -569,6 +569,401 @@ export const compareBenchmarkCases: CompareBenchmarkCase[] = [
     expectedTransferablePatterns: ['排队和价格证据', '适合/不适合场景', '同城互动'],
     expectedAigcWeaknesses: ['缺少真实证据', '评价过满'],
   },
+];
+
+interface ExpansionSeed {
+  id: string;
+  title: string;
+  platform: BenchmarkPlatform;
+  contentGoal: string;
+  productTopic: string;
+  targetAudience: string;
+  expectedBadcases: string[];
+  expectedScoreRange: BenchmarkScoreRange;
+  expectedRiskLevel: BenchmarkRiskLevel;
+  quality: 'low' | 'medium' | 'usable' | 'good' | 'high-risk';
+  notes?: string;
+}
+
+const PLATFORM_LABELS_FOR_DATA: Record<BenchmarkPlatform, string> = {
+  xiaohongshu: '小红书',
+  douyin: '抖音',
+};
+
+const xhsLowContent = (topic: string) =>
+  `这次分享一个${topic}，整体很好用，颜值也不错，日常使用很方便。适合想提升生活品质的姐妹，闭眼入不踩雷。`;
+
+const xhsGoodContent = (topic: string, audience: string) =>
+  `${topic}我按“搜索问题-使用场景-限制条件”整理了一版：适合${audience}。先看适合人群，再看预算和使用频率，最后附 3 条避坑清单。优点是上手快，限制是需要结合个人场景判断，不建议只看单一卖点下单。`;
+
+const dyLowContent = (topic: string) =>
+  `今天给大家介绍${topic}。它功能不错，使用简单，日常很方便。如果你也需要，可以了解一下。`;
+
+const dyGoodContent = (topic: string, audience: string) =>
+  `开头 3 秒：同样是${topic}，为什么有人买完闲置，有人天天用？镜头一切到真实场景：${audience}最容易踩的坑是使用频率和预期不匹配。中段给 3 个对比镜头，结尾提问：你更在意价格、效果还是省事？`;
+
+const riskyContent = (topic: string) =>
+  `${topic}真的适合所有人，效果立竿见影，用一次就能看到明显变化。不用犹豫，想变好的人现在就下单，保证不会后悔。`;
+
+const evaluateExpansionSeeds: ExpansionSeed[] = [
+  {
+    id: 'eval-xhs-makeup-brush-011',
+    title: '小红书｜新手化妆刷｜泛泛推荐',
+    platform: 'xiaohongshu',
+    contentGoal: '新手种草',
+    productTopic: '新手化妆刷',
+    targetAudience: '刚开始学化妆、预算 150 元以内的大学生',
+    expectedBadcases: ['真实体验不足', '收藏价值不足', '购买顾虑未回应'],
+    expectedScoreRange: '40-59',
+    expectedRiskLevel: 'low',
+    quality: 'low',
+  },
+  {
+    id: 'eval-xhs-meal-replacement-012',
+    title: '小红书｜轻食代餐｜减重承诺风险',
+    platform: 'xiaohongshu',
+    contentGoal: '种草转化',
+    productTopic: '轻食代餐',
+    targetAudience: '想控制热量但不想节食的上班族',
+    expectedBadcases: ['夸大宣传', '未支撑功效/效果声明', '购买顾虑未回应'],
+    expectedScoreRange: '0-39',
+    expectedRiskLevel: 'high',
+    quality: 'high-risk',
+    notes: '合成健康风险样例，测试减脂/代餐过度承诺。',
+  },
+  {
+    id: 'eval-xhs-yoga-mat-013',
+    title: '小红书｜瑜伽垫｜有场景但缺少对比',
+    platform: 'xiaohongshu',
+    contentGoal: '搜索沉淀',
+    productTopic: '瑜伽垫',
+    targetAudience: '居家练习、担心打滑和收纳的新手',
+    expectedBadcases: ['收藏价值不足', '关键词覆盖弱'],
+    expectedScoreRange: '60-74',
+    expectedRiskLevel: 'low',
+    quality: 'usable',
+  },
+  {
+    id: 'eval-xhs-acne-skincare-014',
+    title: '小红书｜祛痘护肤品｜功效绝对化',
+    platform: 'xiaohongshu',
+    contentGoal: '高风险转化',
+    productTopic: '祛痘护肤品',
+    targetAudience: '反复长痘、急于看到改善的年轻用户',
+    expectedBadcases: ['未支撑功效/效果声明', '医疗/护肤风险', '真实体验不足'],
+    expectedScoreRange: '0-39',
+    expectedRiskLevel: 'high',
+    quality: 'high-risk',
+  },
+  {
+    id: 'eval-xhs-grad-study-015',
+    title: '小红书｜研究生学习规划｜结构清晰',
+    platform: 'xiaohongshu',
+    contentGoal: '收藏增长',
+    productTopic: '研究生学习规划',
+    targetAudience: '研一新生、想平衡论文和求职准备的人群',
+    expectedBadcases: ['执行路径不够细', '阶段目标缺少衡量'],
+    expectedScoreRange: '75-89',
+    expectedRiskLevel: 'low',
+    quality: 'good',
+  },
+  {
+    id: 'eval-xhs-aroma-016',
+    title: '小红书｜小户型香薰｜场景体验不足',
+    platform: 'xiaohongshu',
+    contentGoal: '生活方式种草',
+    productTopic: '小户型香薰',
+    targetAudience: '独居租房、担心味道太冲和安全性的用户',
+    expectedBadcases: ['真实体验不足', '购买顾虑未回应'],
+    expectedScoreRange: '40-59',
+    expectedRiskLevel: 'medium',
+    quality: 'low',
+  },
+  {
+    id: 'eval-xhs-sports-bra-017',
+    title: '小红书｜运动内衣｜尺寸顾虑未回应',
+    platform: 'xiaohongshu',
+    contentGoal: '种草转化',
+    productTopic: '运动内衣',
+    targetAudience: '跑步和普拉提新手，担心尺码和支撑度',
+    expectedBadcases: ['购买顾虑未回应', '真实体验不足'],
+    expectedScoreRange: '60-74',
+    expectedRiskLevel: 'low',
+    quality: 'usable',
+  },
+  {
+    id: 'eval-xhs-health-tea-018',
+    title: '小红书｜养生茶饮｜健康功效夸大',
+    platform: 'xiaohongshu',
+    contentGoal: '转化种草',
+    productTopic: '养生茶饮',
+    targetAudience: '熬夜、压力大、想调理状态的年轻上班族',
+    expectedBadcases: ['夸大宣传', '医疗/健康高风险'],
+    expectedScoreRange: '0-39',
+    expectedRiskLevel: 'high',
+    quality: 'high-risk',
+  },
+  {
+    id: 'eval-xhs-pet-feeder-019',
+    title: '小红书｜宠物智能喂食器｜避坑清单',
+    platform: 'xiaohongshu',
+    contentGoal: '搜索沉淀',
+    productTopic: '宠物智能喂食器',
+    targetAudience: '经常加班、担心猫咪定时吃饭的新手铲屎官',
+    expectedBadcases: ['安装限制说明不足', '售后顾虑未回应'],
+    expectedScoreRange: '75-89',
+    expectedRiskLevel: 'low',
+    quality: 'good',
+  },
+  {
+    id: 'eval-xhs-camping-020',
+    title: '小红书｜露营装备避坑｜可收藏清单',
+    platform: 'xiaohongshu',
+    contentGoal: '收藏增长',
+    productTopic: '露营装备避坑',
+    targetAudience: '第一次周末露营、预算有限的新手',
+    expectedBadcases: ['预算分层不够', '场景限制需补充'],
+    expectedScoreRange: '75-89',
+    expectedRiskLevel: 'low',
+    quality: 'good',
+  },
+  {
+    id: 'eval-dy-gaming-headset-021',
+    title: '抖音｜游戏耳机｜缺少试听镜头',
+    platform: 'douyin',
+    contentGoal: '短视频带货',
+    productTopic: '游戏耳机',
+    targetAudience: '预算 300 元以内、玩 FPS 和手游的学生党',
+    expectedBadcases: ['前三秒 Hook 弱', '镜头感不足', '互动触发弱'],
+    expectedScoreRange: '40-59',
+    expectedRiskLevel: 'low',
+    quality: 'low',
+  },
+  {
+    id: 'eval-dy-ev-testdrive-022',
+    title: '抖音｜新能源车试驾｜场景对比清晰',
+    platform: 'douyin',
+    contentGoal: '线索转化',
+    productTopic: '新能源车试驾',
+    targetAudience: '第一次买新能源车、担心续航和充电的家庭用户',
+    expectedBadcases: ['数据依据需补充', '互动触发弱'],
+    expectedScoreRange: '75-89',
+    expectedRiskLevel: 'medium',
+    quality: 'good',
+  },
+  {
+    id: 'eval-dy-live-script-023',
+    title: '抖音｜直播间转化脚本｜硬广感强',
+    platform: 'douyin',
+    contentGoal: '直播转化',
+    productTopic: '直播间转化脚本',
+    targetAudience: '新手主播和直播运营',
+    expectedBadcases: ['硬广感过强', '互动触发弱', '节奏拖沓'],
+    expectedScoreRange: '40-59',
+    expectedRiskLevel: 'medium',
+    quality: 'low',
+  },
+  {
+    id: 'eval-dy-fitness-equipment-024',
+    title: '抖音｜健身器材｜适合所有人风险',
+    platform: 'douyin',
+    contentGoal: '带货转化',
+    productTopic: '健身器材',
+    targetAudience: '想居家锻炼但空间有限的人群',
+    expectedBadcases: ['夸大宣传', '健康风险', '人群限制缺失'],
+    expectedScoreRange: '0-39',
+    expectedRiskLevel: 'high',
+    quality: 'high-risk',
+  },
+  {
+    id: 'eval-dy-cleaning-gadget-025',
+    title: '抖音｜家庭清洁神器｜反差镜头',
+    platform: 'douyin',
+    contentGoal: '短视频带货',
+    productTopic: '家庭清洁神器',
+    targetAudience: '养宠家庭、厨房清洁压力大的用户',
+    expectedBadcases: ['实测边界需补充'],
+    expectedScoreRange: '75-89',
+    expectedRiskLevel: 'low',
+    quality: 'good',
+  },
+  {
+    id: 'eval-dy-work-communication-026',
+    title: '抖音｜职场沟通课｜收益承诺过度',
+    platform: 'douyin',
+    contentGoal: '课程转化',
+    productTopic: '职场沟通课',
+    targetAudience: '害怕汇报、想提升表达的新职场人',
+    expectedBadcases: ['课程转化夸大收益', '信任障碍未回应'],
+    expectedScoreRange: '0-39',
+    expectedRiskLevel: 'high',
+    quality: 'high-risk',
+  },
+  {
+    id: 'eval-dy-travel-vlog-027',
+    title: '抖音｜旅行 vlog｜节奏基本可用',
+    platform: 'douyin',
+    contentGoal: '涨粉',
+    productTopic: '旅行 vlog',
+    targetAudience: '喜欢低预算短途旅行的年轻人',
+    expectedBadcases: ['完播动机不足', '互动触发弱'],
+    expectedScoreRange: '60-74',
+    expectedRiskLevel: 'low',
+    quality: 'usable',
+  },
+  {
+    id: 'eval-dy-mom-baby-028',
+    title: '抖音｜母婴用品｜绝对化推荐',
+    platform: 'douyin',
+    contentGoal: '母婴转化',
+    productTopic: '母婴用品',
+    targetAudience: '新手妈妈，担心安全性和材质',
+    expectedBadcases: ['适合所有人', '安全功效未支撑', '风险复核'],
+    expectedScoreRange: '0-39',
+    expectedRiskLevel: 'high',
+    quality: 'high-risk',
+  },
+  {
+    id: 'eval-dy-campus-study-029',
+    title: '抖音｜校园学习方法｜互动较弱',
+    platform: 'douyin',
+    contentGoal: '涨粉',
+    productTopic: '校园学习方法',
+    targetAudience: '期末复习焦虑、需要方法模板的大学生',
+    expectedBadcases: ['互动触发弱', 'IP 记忆点不足'],
+    expectedScoreRange: '60-74',
+    expectedRiskLevel: 'low',
+    quality: 'usable',
+  },
+  {
+    id: 'eval-dy-pet-account-030',
+    title: '抖音｜宠物短视频账号｜人设钩子清晰',
+    platform: 'douyin',
+    contentGoal: '账号涨粉',
+    productTopic: '宠物短视频账号',
+    targetAudience: '喜欢治愈宠物日常和轻剧情的用户',
+    expectedBadcases: ['持续 IP 结构需补充'],
+    expectedScoreRange: '75-89',
+    expectedRiskLevel: 'low',
+    quality: 'good',
+  },
+];
+
+const evaluateExpansionCases: EvaluateBenchmarkCase[] = evaluateExpansionSeeds.map((seed) => ({
+  ...seed,
+  module: 'evaluate',
+  originalPrompt: `围绕${seed.productTopic}生成一条适合${PLATFORM_LABELS_FOR_DATA[seed.platform]}的内容，目标是${seed.contentGoal}。`,
+  aiContent:
+    seed.quality === 'high-risk'
+      ? riskyContent(seed.productTopic)
+      : seed.platform === 'xiaohongshu'
+        ? seed.quality === 'good' || seed.quality === 'usable'
+          ? xhsGoodContent(seed.productTopic, seed.targetAudience)
+          : xhsLowContent(seed.productTopic)
+        : seed.quality === 'good' || seed.quality === 'usable'
+          ? dyGoodContent(seed.productTopic, seed.targetAudience)
+          : dyLowContent(seed.productTopic),
+  pgcReference:
+    seed.platform === 'xiaohongshu'
+      ? `合成 PGC：围绕“${seed.productTopic}怎么选/值不值得买”组织内容，先写适合${seed.targetAudience}的使用场景，再列出优点、限制条件、预算建议和可收藏清单。`
+      : `合成 PGC：围绕${seed.productTopic}设计 3 秒 Hook、真实镜头、节奏转折和评论区问题，明确适合${seed.targetAudience}的使用场景。`,
+}));
+
+const abExpansionSeeds: ExpansionSeed[] = [
+  ...evaluateExpansionSeeds.slice(0, 10).map((seed, index) => ({
+    ...seed,
+    id: `ab-xhs-extra-${String(index + 11).padStart(3, '0')}`,
+    title: `${PLATFORM_LABELS_FOR_DATA[seed.platform]}｜${seed.productTopic}｜泛内容 vs 平台结构`,
+    expectedScoreRange: index % 4 === 0 ? '60-74' : '75-89' as BenchmarkScoreRange,
+    expectedRiskLevel: seed.expectedRiskLevel,
+  })),
+  ...evaluateExpansionSeeds.slice(10, 20).map((seed, index) => ({
+    ...seed,
+    id: `ab-dy-extra-${String(index + 21).padStart(3, '0')}`,
+    title: `${PLATFORM_LABELS_FOR_DATA[seed.platform]}｜${seed.productTopic}｜平铺口播 vs 镜头脚本`,
+    expectedScoreRange: index % 4 === 0 ? '60-74' : '75-89' as BenchmarkScoreRange,
+    expectedRiskLevel: seed.expectedRiskLevel,
+  })),
+];
+
+const abExpansionCases: AbTestBenchmarkCase[] = abExpansionSeeds.map((seed) => ({
+  id: seed.id,
+  title: seed.title,
+  module: 'ab-test',
+  platform: seed.platform,
+  contentGoal: seed.contentGoal,
+  productTopic: seed.productTopic,
+  targetAudience: seed.targetAudience,
+  expectedBadcases: seed.expectedBadcases,
+  expectedScoreRange: seed.expectedScoreRange,
+  expectedRiskLevel: seed.expectedRiskLevel,
+  notes: seed.notes || '合成 A/B 样例，测试平台结构化 Prompt 的提升效果。',
+  promptA: `写一条关于${seed.productTopic}的${PLATFORM_LABELS_FOR_DATA[seed.platform]}内容。`,
+  contentA: seed.platform === 'xiaohongshu' ? xhsLowContent(seed.productTopic) : dyLowContent(seed.productTopic),
+  promptB:
+    seed.platform === 'xiaohongshu'
+      ? `写一篇${seed.productTopic}小红书内容，必须包含搜索关键词、真实使用场景、适合/不适合人群、限制条件和可收藏清单。`
+      : `写一条${seed.productTopic}抖音脚本，必须包含 3 秒 Hook、镜头切换、情绪节奏、实测边界和评论互动问题。`,
+  contentB: seed.platform === 'xiaohongshu'
+    ? xhsGoodContent(seed.productTopic, seed.targetAudience)
+    : dyGoodContent(seed.productTopic, seed.targetAudience),
+  expectedWinner: 'B',
+  expectedImprovementAreas: seed.platform === 'xiaohongshu'
+    ? ['搜索意图', '真实体验', '收藏价值', '限制条件']
+    : ['前三秒 Hook', '镜头感', '完播动机', '互动触发'],
+}));
+
+const compareExpansionSeeds: ExpansionSeed[] = [
+  ...evaluateExpansionSeeds.slice(0, 10).map((seed, index) => ({
+    ...seed,
+    id: `cmp-xhs-extra-${String(index + 11).padStart(3, '0')}`,
+    title: `${PLATFORM_LABELS_FOR_DATA[seed.platform]}｜${seed.productTopic}｜AIGC vs 合成 PGC`,
+  })),
+  ...evaluateExpansionSeeds.slice(10, 20).map((seed, index) => ({
+    ...seed,
+    id: `cmp-dy-extra-${String(index + 21).padStart(3, '0')}`,
+    title: `${PLATFORM_LABELS_FOR_DATA[seed.platform]}｜${seed.productTopic}｜AIGC vs 合成 PGC`,
+  })),
+];
+
+const compareExpansionCases: CompareBenchmarkCase[] = compareExpansionSeeds.map((seed) => ({
+  id: seed.id,
+  title: seed.title,
+  module: 'compare',
+  platform: seed.platform,
+  contentGoal: seed.contentGoal,
+  productTopic: seed.productTopic,
+  targetAudience: seed.targetAudience,
+  expectedBadcases: seed.expectedBadcases,
+  expectedScoreRange: seed.expectedScoreRange,
+  expectedRiskLevel: seed.expectedRiskLevel,
+  notes: seed.notes || '合成 PGC 对比样例，不复制真实平台原文。',
+  aiContent: seed.platform === 'xiaohongshu' ? xhsLowContent(seed.productTopic) : dyLowContent(seed.productTopic),
+  pgcReference:
+    seed.platform === 'xiaohongshu'
+      ? `合成 PGC：标题含“${seed.productTopic}怎么选/避坑/实测”，正文包含${seed.targetAudience}的真实场景、使用限制、预算分层和可收藏清单。`
+      : `合成 PGC：开头用${seed.productTopic}的反差画面，3 秒内给冲突，随后用 3 个镜头展示过程、限制和结果，结尾设置评论选择题。`,
+  expectedTransferablePatterns: seed.platform === 'xiaohongshu'
+    ? ['搜索关键词前置', '真实场景细节', '适合/不适合人群', '可收藏清单']
+    : ['3 秒 Hook', '镜头节奏', '反差场景', '评论互动'],
+  expectedAigcWeaknesses: seed.platform === 'xiaohongshu'
+    ? ['泛化推荐', '缺少体验证据', '限制条件不足']
+    : ['平铺介绍', '缺少镜头语言', '互动触发弱'],
+}));
+
+export const evaluateBenchmarkCases: EvaluateBenchmarkCase[] = [
+  ...baseEvaluateBenchmarkCases,
+  ...evaluateExpansionCases,
+];
+
+export const abTestBenchmarkCases: AbTestBenchmarkCase[] = [
+  ...baseAbTestBenchmarkCases,
+  ...abExpansionCases,
+];
+
+export const compareBenchmarkCases: CompareBenchmarkCase[] = [
+  ...baseCompareBenchmarkCases,
+  ...compareExpansionCases,
 ];
 
 export const benchmarkCases: BenchmarkCase[] = [

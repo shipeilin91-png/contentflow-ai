@@ -440,6 +440,313 @@ function tableRow(values: unknown[]): string {
   return `| ${values.map((value) => String(value ?? '-').replace(/\n/g, ' ')).join(' | ')} |`;
 }
 
+function formatScore(value: number | undefined): string {
+  return typeof value === 'number' ? `${value}/100` : '暂无';
+}
+
+function platformDisplay(value: string): string {
+  if (value === 'xiaohongshu') return '小红书';
+  if (value === 'douyin') return '抖音';
+  return value;
+}
+
+function markdownBlock(value: unknown): string {
+  if (value === undefined || value === null || value === '') return '暂无';
+  return `\`\`\`\n${typeof value === 'string' ? value : JSON.stringify(value, null, 2)}\n\`\`\``;
+}
+
+function markdownList(values: unknown): string {
+  if (!Array.isArray(values) || values.length === 0) return '- 暂无';
+  return values.map((item) => `- ${String(item)}`).join('\n');
+}
+
+function getLocalizedAudience(response: unknown): Record<string, unknown> {
+  const record = asRecord(response);
+  const localized = asRecord(record.localized);
+  const zh = asRecord(localized.zh);
+  const zhAudience = asRecord(zh.audiencePersona);
+  if (Object.keys(zhAudience).length > 0) return zhAudience;
+  return asRecord(record.audiencePersona);
+}
+
+function getLocalizedPromptV2(response: unknown): Record<string, unknown> {
+  const record = asRecord(response);
+  const localized = asRecord(record.localized);
+  const zh = asRecord(localized.zh);
+  const zhPrompt = asRecord(zh.promptV2);
+  if (Object.keys(zhPrompt).length > 0) return zhPrompt;
+  return asRecord(record.promptV2);
+}
+
+function getLocalizedRisk(response: unknown): Record<string, unknown> {
+  const record = asRecord(response);
+  const localized = asRecord(record.localized);
+  const zh = asRecord(localized.zh);
+  const zhRisk = asRecord(zh.riskAssessment);
+  const risk = asRecord(record.riskAssessment);
+  return { ...risk, ...zhRisk };
+}
+
+function getLocalizedConfidence(response: unknown): Record<string, unknown> {
+  const record = asRecord(response);
+  const localized = asRecord(record.localized);
+  const zh = asRecord(localized.zh);
+  const zhConfidence = asRecord(zh.confidence);
+  const confidence = asRecord(record.confidence);
+  return { ...confidence, ...zhConfidence };
+}
+
+function renderBadcaseDetails(response: unknown): string {
+  const record = asRecord(response);
+  if (!Array.isArray(record.badcases) || record.badcases.length === 0) return '暂无';
+  return record.badcases
+    .map((item, index) => {
+      const badcase = asRecord(item);
+      return `#### Badcase ${index + 1}. ${badcase.badcaseLabel || badcase.type || '未分类问题'}
+
+- Layer：${badcase.layer || '暂无'}
+- Type：${badcase.type || '暂无'}
+- Evidence：${badcase.evidence || '暂无'}
+- Fix：${badcase.fix || '暂无'}`;
+    })
+    .join('\n\n');
+}
+
+function renderEvaluateCase(index: number, item: EvaluateBenchmarkCase, result: BenchmarkResult): string {
+  const audience = getLocalizedAudience(result.response);
+  const promptV2 = getLocalizedPromptV2(result.response);
+  const risk = getLocalizedRisk(result.response);
+  const confidence = getLocalizedConfidence(result.response);
+  const responseRecord = asRecord(result.response);
+
+  return `## Case ${index}. ${item.title}
+
+- Case ID：${item.id}
+- Module：内容评测 Evaluation
+- Platform：${platformDisplay(item.platform)}
+- Content Goal：${item.contentGoal}
+- Product Topic：${item.productTopic}
+- Expected Score Range：${item.expectedScoreRange}
+- Expected Risk Level：${item.expectedRiskLevel || '暂无'}
+- Expected Badcases：${item.expectedBadcases.join('、')}
+
+### 1. 输入 Input
+
+#### Target Audience
+${markdownBlock(item.targetAudience)}
+
+#### Original Prompt
+${markdownBlock(item.originalPrompt)}
+
+#### AI Generated Content
+${markdownBlock(item.aiContent)}
+
+#### PGC Reference
+${markdownBlock(item.pgcReference || '未提供')}
+
+### 2. ContentFlow 输出 Output
+
+- Overall Score：${formatScore(result.overallScore)}
+- Platform Fit：${formatScore(result.platformFit)}
+- Audience Fit：${formatScore(result.audienceFit)}
+- Creator Goal Fit：${formatScore(result.creatorGoalFit)}
+- Risk Level：${result.riskLevel || '暂无'}
+- Confidence Level：${result.confidenceLevel || '暂无'}
+- Used Fallback：${String(responseRecord._fallback ?? '暂无')}
+
+### 3. Audience Persona
+
+- 用户意图 User Intent：${audience.userIntent || '暂无'}
+- 心理需求 Psychological Needs：
+${markdownList(audience.psychologicalNeeds)}
+- 信任障碍 Trust Barriers：
+${markdownList(audience.trustBarriers)}
+- 内容偏好 Content Preference：${audience.contentPreference || '暂无'}
+
+### 4. Badcase Diagnosis
+
+${renderBadcaseDetails(result.response)}
+
+### 5. Prompt v2
+
+#### Optimized Prompt
+${markdownBlock(promptV2.optimizedPrompt)}
+
+#### Change Reasons
+${markdownList(promptV2.changeReasons)}
+
+#### Expected Improvements
+${markdownList(promptV2.expectedImprovements)}
+
+### 6. Risk & Confidence
+
+- riskAssessment.riskLevel：${risk.riskLevel || '暂无'}
+- riskAssessment.riskTypes / 中文 label：
+${markdownList(risk.riskTypeLabels || risk.riskTypes)}
+- riskAssessment.reasons：
+${markdownList(risk.reasons)}
+- confidence.score：${confidence.score ?? '暂无'}
+- confidence.level：${confidence.level || '暂无'}
+- confidence.reasons：
+${markdownList(confidence.reasons)}
+`;
+}
+
+function renderAbCase(index: number, item: AbTestBenchmarkCase, result: BenchmarkResult): string {
+  const response = asRecord(result.response);
+  const responseA = response.A;
+  const responseB = response.B;
+  const bPrompt = getLocalizedPromptV2(responseB);
+  const conclusion =
+    result.winner === 'B'
+      ? 'Prompt B 在该 case 中获得更高综合分，说明加入平台机制、受众约束、真实场景或表达结构后，内容适配度提升。'
+      : result.scoreA === result.scoreB
+        ? '两版差异有限，需要引入更明确的目标约束或平台表达结构。'
+        : 'Prompt B 未显著提升，需要检查 Prompt 优化方向。';
+
+  return `## Case ${index}. ${item.title}
+
+- Case ID：${item.id}
+- Module：A/B 测试
+- Platform：${platformDisplay(item.platform)}
+- Content Goal：${item.contentGoal}
+- Product Topic：${item.productTopic}
+- Expected Winner：${item.expectedWinner}
+- Expected Improvement Areas：${item.expectedImprovementAreas.join('、')}
+
+### 1. 输入 Input
+
+#### Prompt A
+${markdownBlock(item.promptA)}
+
+#### Content A
+${markdownBlock(item.contentA)}
+
+#### Prompt B
+${markdownBlock(item.promptB)}
+
+#### Content B
+${markdownBlock(item.contentB)}
+
+### 2. A/B 自动评测结果
+
+- Score A：${formatScore(result.scoreA)}
+- Score B：${formatScore(result.scoreB)}
+- Winner：${result.winner || '暂无'}
+- Expected Winner：${result.expectedWinner || '暂无'}
+- Winner Matched：${result.winnerMatched ?? '暂无'}
+- Improvement Delta：${result.improvementDelta ?? '暂无'}
+
+### 3. A 版本主要问题
+
+${responseA ? renderBadcaseDetails(responseA) : '当前 runner 未保存 A 版本完整 badcase，可查看 latest.json 原始结果。'}
+
+### 4. B 版本主要问题 / 优化表现
+
+${responseB ? renderBadcaseDetails(responseB) : '暂无'}
+
+#### B 版本 Prompt v2
+${markdownBlock(bPrompt.optimizedPrompt)}
+
+### 5. 结论
+
+${conclusion}
+`;
+}
+
+function renderCompareCase(index: number, item: CompareBenchmarkCase, result: BenchmarkResult): string {
+  const response = asRecord(result.response);
+  const transferable = response.transferableRules || response.transferablePatterns;
+  const weaknesses = response.aigcWeaknesses;
+
+  return `## Case ${index}. ${item.title}
+
+- Case ID：${item.id}
+- Module：PGC 对比
+- Platform：${platformDisplay(item.platform)}
+- Content Goal：${item.contentGoal}
+- Product Topic：${item.productTopic}
+- Expected Transferable Patterns：${item.expectedTransferablePatterns.join('、')}
+- Expected AIGC Weaknesses：${item.expectedAigcWeaknesses.join('、')}
+
+### 1. 输入 Input
+
+#### AI Content
+${markdownBlock(item.aiContent)}
+
+#### PGC Reference
+${markdownBlock(item.pgcReference)}
+
+### 2. Compare 输出 Output
+
+- score / overallScore：${response.score || response.overallScore || '暂无'}
+- gapSummary：${response.gapSummary || '暂无'}
+- sopPotential：${markdownBlock(response.sopPotential || '暂无')}
+
+#### 完整 response 摘要
+${markdownBlock(result.response)}
+
+### 3. 可迁移策略
+
+#### Expected Transferable Patterns
+${markdownList(item.expectedTransferablePatterns)}
+
+#### Model Transferable Patterns
+${markdownList(transferable)}
+
+### 4. AIGC 内容短板
+
+#### Expected AIGC Weaknesses
+${markdownList(item.expectedAigcWeaknesses)}
+
+#### Model AIGC Weaknesses
+${markdownList(weaknesses)}
+`;
+}
+
+function createCasesReport(results: BenchmarkResult[]): string {
+  const caseMap = new Map(benchmarkCases.map((item) => [item.id, item]));
+  const detailSections = results
+    .map((result, index) => {
+      const item = caseMap.get(result.caseId);
+      if (!item) return `## Case ${index + 1}. ${result.title}\n\n原始 case 未找到。`;
+      if (item.module === 'evaluate') return renderEvaluateCase(index + 1, item, result);
+      if (item.module === 'ab-test') return renderAbCase(index + 1, item, result);
+      return renderCompareCase(index + 1, item, result);
+    })
+    .join('\n\n---\n\n');
+
+  const indexRows = results
+    .map((item) =>
+      tableRow([
+        item.caseId,
+        item.module,
+        item.platform,
+        item.title,
+        item.status,
+        item.module === 'ab-test'
+          ? `${formatScore(item.scoreA)} / ${formatScore(item.scoreB)}`
+          : formatScore(item.overallScore),
+        item.riskLevel || '-',
+        (item.badcases || []).slice(0, 3).join('、') || '-',
+      ])
+    )
+    .join('\n');
+
+  return `# ContentFlow Benchmark Case Details
+
+本报告展示全部 ${results.length} 条 benchmark case 的原始输入、ContentFlow 输出、评分、Badcase、风险、Prompt 优化建议和对比结果。所有样例均为合成测试场景，不代表真实用户线上数据。
+
+${detailSections}
+
+# Appendix：Case Index
+
+| caseId | module | platform | title | status | overallScore 或 scoreA/scoreB | riskLevel | topBadcases |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+${indexRows}
+`;
+}
+
 function createSummary(results: BenchmarkResult[], analysis: AnalysisData): string {
   const evaluate = results.filter((item) => item.module === 'evaluate');
   const abTests = results.filter((item) => item.module === 'ab-test');
@@ -456,6 +763,8 @@ function createSummary(results: BenchmarkResult[], analysis: AnalysisData): stri
 - Success count: ${analysis.successCount}
 - Failed count: ${analysis.failedCount}
 - Skipped count: ${analysis.skippedCount}
+
+如需查看全部 ${analysis.totalCases} 条 benchmark case 的完整输入与输出，请打开 benchmark-results/latest-cases.md。
 
 ## Evaluate Results
 | caseId | title | platform | contentGoal | overallScore | riskLevel | topBadcases | status |
@@ -635,6 +944,7 @@ async function writeReports(results: BenchmarkResult[], analysis: AnalysisData) 
   await mkdir(RESULTS_DIR, { recursive: true });
   await writeFile(path.join(RESULTS_DIR, 'latest.json'), JSON.stringify({ runTime: RUN_TIME, baseUrl: BASE_URL, results }, null, 2));
   await writeFile(path.join(RESULTS_DIR, 'latest.csv'), toCsv(results));
+  await writeFile(path.join(RESULTS_DIR, 'latest-cases.md'), createCasesReport(results));
   await writeFile(path.join(RESULTS_DIR, 'latest-summary.md'), createSummary(results, analysis));
   await writeFile(path.join(RESULTS_DIR, 'latest-analysis.md'), createAnalysisReport(results, analysis));
   await writeFile(path.join(RESULTS_DIR, 'benchmark-analysis-data.json'), JSON.stringify(analysis, null, 2));

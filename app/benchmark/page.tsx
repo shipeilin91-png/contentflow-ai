@@ -257,9 +257,10 @@ BENCHMARK_BASE_URL=http://localhost:3001 npm run benchmark`}</pre>
         <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
           <h3 className="text-xs font-semibold text-indigo-900">报告位置 Report Files</h3>
           <ul className="mt-3 space-y-1.5 text-xs text-indigo-800">
+            <li>benchmark-results/latest-cases.md：全部 case 输入输出详情报告</li>
             <li>benchmark-results/latest-summary.md</li>
-            <li>benchmark-results/latest-analysis.md</li>
-            <li>benchmark-results/benchmark-analysis-data.json</li>
+            <li>benchmark-results/latest-analysis.md：基于全部 case 的数据分析报告</li>
+            <li>benchmark-results/benchmark-analysis-data.json：结构化指标</li>
             <li>benchmark-results/latest.csv</li>
             <li>benchmark-results/latest.json</li>
           </ul>
@@ -268,7 +269,7 @@ BENCHMARK_BASE_URL=http://localhost:3001 npm run benchmark`}</pre>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-xs leading-relaxed text-emerald-800">
-          latest-analysis.md 中包含：总体评分表现、高频 Badcase、平台差异分析、A/B 测试提升率、风险识别分析，以及可用于简历/作品集的指标候选。
+          latest-cases.md 可查看每条样例的原始输入与 ContentFlow 输出；latest-analysis.md 中包含总体评分表现、高频 Badcase、平台差异分析、A/B 测试提升率、风险识别分析，以及可用于简历/作品集的指标候选。
         </div>
         <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">
           benchmark-results/ 已被 .gitignore 排除，所以本地跑出来的 latest-analysis.md 不会自动出现在 Vercel。若需要公开展示某次分析，请手动整理到 docs/benchmark/ 或 README 中。
