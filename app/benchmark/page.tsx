@@ -257,9 +257,9 @@ BENCHMARK_BASE_URL=http://localhost:3001 npm run benchmark`}</pre>
         <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
           <h3 className="text-xs font-semibold text-indigo-900">报告位置 Report Files</h3>
           <ul className="mt-3 space-y-1.5 text-xs text-indigo-800">
-            <li>benchmark-results/latest-cases.md：全部 case 输入输出详情报告</li>
+            <li>benchmark-results/latest-cases.md：全部 60 条逐条 case 输入输出详情报告</li>
             <li>benchmark-results/latest-summary.md</li>
-            <li>benchmark-results/latest-analysis.md：基于全部 case 的数据分析报告</li>
+            <li>benchmark-results/latest-analysis.md：基于 60 条 case 的数据分析报告</li>
             <li>benchmark-results/benchmark-analysis-data.json：结构化指标</li>
             <li>benchmark-results/latest.csv</li>
             <li>benchmark-results/latest.json</li>

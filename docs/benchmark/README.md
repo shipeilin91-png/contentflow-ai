@@ -21,16 +21,16 @@ ContentFlow Benchmark 是一个本地自动化测试体系，用于验证 Conten
 
 ## 3. 当前样例规模
 
-当前版本共 90 条 benchmark case：
+当前版本共 60 条 benchmark case：
 
-- evaluate：30 条
-- ab-test：30 条
-- compare：30 条
+- evaluate：20 条
+- ab-test：20 条
+- compare：20 条
 
 平台覆盖：
 
-- 小红书：约 45 条
-- 抖音：约 45 条
+- 小红书：约 30 条
+- 抖音：约 30 条
 
 样例覆盖泛泛种草、夸大功效、输入信息不足、真实体验缺失、短视频 Hook 弱、完播动机不足、伪装真实体验等场景。
 
@@ -55,7 +55,7 @@ BENCHMARK_BASE_URL=http://localhost:3001 npm run benchmark
 脚本会生成到 `benchmark-results/`：
 
 - `latest-summary.md`：基础运行摘要，包含成功数、失败数、每条 case 的核心结果。
-- `latest-cases.md`：全部 90 条 case 的逐条详情报告，包含原始输入、ContentFlow 输出、评分、Badcase、风险、Prompt v2、A/B 对比和 PGC 对比结果。
+- `latest-cases.md`：全部 60 条 case 的逐条详情报告，包含原始输入、ContentFlow 输出、评分、Badcase、风险、Prompt v2、A/B 对比和 PGC 对比结果。
 - `latest-analysis.md`：面向产品经理和作品集展示的数据分析报告。
 - `benchmark-analysis-data.json`：结构化统计指标，方便后续写 README、简历或仪表盘。
 - `latest.csv`：表格分析用数据。
@@ -75,7 +75,7 @@ BENCHMARK_BASE_URL=http://localhost:3001 npm run benchmark
 
 推荐表述：
 
-> 基于 90 条合成 benchmark case，ContentFlow 自动完成内容评测、A/B Prompt 对比和 PGC/AIGC 差距分析，并生成结构化分析报告。指标来自合成测试集，不代表真实用户线上数据。
+> 基于 60 条合成 benchmark case，ContentFlow 自动完成内容评测、A/B Prompt 对比和 PGC/AIGC 差距分析，并生成结构化分析报告。指标来自合成测试集，不代表真实用户线上数据。
 
 ## 7. 边界声明
 

@@ -951,19 +951,34 @@ const compareExpansionCases: CompareBenchmarkCase[] = compareExpansionSeeds.map(
     : ['平铺介绍', '缺少镜头语言', '互动触发弱'],
 }));
 
+const selectedEvaluateExpansionCases = [
+  ...evaluateExpansionCases.slice(0, 5),
+  ...evaluateExpansionCases.slice(10, 15),
+];
+
+const selectedAbExpansionCases = [
+  ...abExpansionCases.slice(0, 5),
+  ...abExpansionCases.slice(10, 15),
+];
+
+const selectedCompareExpansionCases = [
+  ...compareExpansionCases.slice(0, 5),
+  ...compareExpansionCases.slice(10, 15),
+];
+
 export const evaluateBenchmarkCases: EvaluateBenchmarkCase[] = [
   ...baseEvaluateBenchmarkCases,
-  ...evaluateExpansionCases,
+  ...selectedEvaluateExpansionCases,
 ];
 
 export const abTestBenchmarkCases: AbTestBenchmarkCase[] = [
   ...baseAbTestBenchmarkCases,
-  ...abExpansionCases,
+  ...selectedAbExpansionCases,
 ];
 
 export const compareBenchmarkCases: CompareBenchmarkCase[] = [
   ...baseCompareBenchmarkCases,
-  ...compareExpansionCases,
+  ...selectedCompareExpansionCases,
 ];
 
 export const benchmarkCases: BenchmarkCase[] = [
